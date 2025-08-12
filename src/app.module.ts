@@ -5,6 +5,10 @@ import { envSchema } from './validation/env.schema';
 import { PermisController } from './permis/permis.controller';
 import { PermisModule } from './permis/permis.module';
 import { PackModule } from './pack/pack.module';
+import { ServicesModule } from './services/services.module';
+import { AuthModule } from './auth/auth.module';
+import { RoleModule } from './role/role.module';
+import { UserModule } from './user/user.module';
 
 
 @Module({
@@ -21,7 +25,11 @@ import { PackModule } from './pack/pack.module';
       })
     }),
     PermisModule,
-    PackModule
+    PackModule,
+    ServicesModule,
+    AuthModule,
+    RoleModule,
+    UserModule
   ],
   controllers: [PermisController],
   providers: [],

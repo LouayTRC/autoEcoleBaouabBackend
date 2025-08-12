@@ -1,14 +1,14 @@
 import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
+import { schemaOptions } from "src/common/types";
 
 
 export type PermisDocument=Permis & Document
 
-@Schema()
+@Schema(schemaOptions)
 export class Permis{
 
     @Prop({required:true,unique:true})
     type:string;
-
     
 
 }

@@ -1,12 +1,13 @@
 import { MongooseModule, Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
 import { Types } from "mongoose";
+import { schemaOptions } from "src/common/types";
 import { Permis } from "src/permis/permis.schema";
 
 
 export type PackDocument= Document & Pack
 
 
-@Schema()
+@Schema(schemaOptions)
 export class Pack{
 
     @Prop({required:true})
