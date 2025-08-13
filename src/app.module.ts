@@ -1,14 +1,15 @@
-import { Module } from '@nestjs/common';
+import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { MongooseModule } from '@nestjs/mongoose';
 import { envSchema } from './validation/env.schema';
-import { PermisController } from './permis/permis.controller';
-import { PermisModule } from './permis/permis.module';
-import { PackModule } from './pack/pack.module';
-import { ServicesModule } from './services/services.module';
-import { AuthModule } from './auth/auth.module';
-import { RoleModule } from './role/role.module';
-import { UserModule } from './user/user.module';
+import { PermisController } from './crud/permis/permis.controller';
+import { PermisModule } from './crud/permis/permis.module';
+import { PackModule } from './crud/pack/pack.module';
+import { ServicesModule } from './crud/services/services.module';
+import { AuthModule } from './crud/auth/auth.module';
+import { RoleModule } from './crud/role/role.module';
+import { UserModule } from './crud/user/user.module';
+import { AuthenticateMiddleware } from './middlewares/authenticate.middleware';
 
 
 @Module({
@@ -34,4 +35,14 @@ import { UserModule } from './user/user.module';
   controllers: [PermisController],
   providers: [],
 })
-export class AppModule {}
+export class AppModule implements NestModule{
+
+
+  configure(consumer: MiddlewareConsumer) {
+    consumer
+      .apply(AuthenticateMiddleware)
+      .exclude('auth/login')
+      .forRoutes('*')
+  }
+  
+}

@@ -1,10 +1,10 @@
 import { Injectable } from '@nestjs/common';
 import { User } from '../user/user.schema';
 import { ServiceResponse } from 'src/common/types';
-import { UserService } from 'src/user/user.service';
+import { UserService } from 'src/crud/user/user.service';
 import { ConfigService } from '@nestjs/config';
 import bcrypt from 'node_modules/bcryptjs';
-import { JwtModule, JwtService } from '@nestjs/jwt';
+import { JwtService } from '@nestjs/jwt';
 
 @Injectable()
 export class AuthService {
@@ -31,7 +31,7 @@ export class AuthService {
         try {
             const { username, password } = form
 
-            const getUser = await this.userService.getUserByCredentials(username,["role"]);
+            const getUser = await this.userService.getUserByIdentifiant(username);
             if (!getUser.success || !getUser.data) {
                 return { ...getUser }
             }
@@ -46,19 +46,17 @@ export class AuthService {
                 }
             }
 
-            const token=await this.jwtService.sign(
+            const token=this.jwtService.sign(
                 {
                     user_id:getUser.data._id,
-
-                }
-                
-            )
+                    user_role:getUser.data.role._id
+                })
 
             return {
                 success:true,
                 data:{
                     user:getUser.data,
-                    token:''
+                    token
                 },
                 message:"Login avec succès"
             }
