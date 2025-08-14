@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, InternalServerErrorException, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Role, RoleDocument } from './role.schema';
 import { Model } from 'mongoose';
@@ -18,16 +18,11 @@ export class RoleService {
             })
 
             return {
-                success: true,
                 data: newRole,
                 message: "Role créé avec succès"
             }
         } catch (error) {
-            return {
-                success: true,
-                data: null,
-                message: error.message || "Problème dans la création du role"
-            }
+            throw new InternalServerErrorException("Problème dans la création du role")
         }
     }
 
@@ -36,72 +31,32 @@ export class RoleService {
             const roles = await this.roleModel.find().exec();
 
             return {
-                success: true,
                 data: roles || [],
             }
 
         } catch (error) {
-            return {
-                success: true,
-                data: [],
-                message: error.message || "Aucun Role trouvé",
-                errorCode: 500
-            }
+            throw new InternalServerErrorException("Problème dans la récupération des roles !")
         }
     }
 
 
-    async getRoleByName(name: string): Promise<ServiceResponse<Role | null>> {
-        try {
-            const role = await this.roleModel.findOne({ name }).exec();
-
-            if (!role) {
-                return {
-                    success: false,
-                    data: null,
-                    message: 'Role introuvable !',
-                    errorCode: 404
-                }
-            }
-            return {
-                success: true,
-                data: role
-            }
-
-        } catch (error) {
-            return {
-                success: false,
-                data: null,
-                message: error.message || 'Problème dans la recherche du role',
-                errorCode: 500
-            }
-        }
+    async getRoleByName(name: string): Promise<Role | null> {
+        return await this.roleModel.findOne({ name }).exec();
     }
 
-    async getRoleById(id: string): Promise<ServiceResponse<Role | null>> {
+    async getRoleById(id: string): Promise<ServiceResponse<Role>> {
         try {
-            const role = await this.roleModel.findOne({ _id:id }).exec();
+            const role = await this.roleModel.findOne({ _id: id }).exec();
 
             if (!role) {
-                return {
-                    success: false,
-                    data: null,
-                    message: 'Role introuvable !',
-                    errorCode: 404
-                }
+                throw new NotFoundException('Role introuvable !')
             }
             return {
-                success: true,
                 data: role
             }
 
         } catch (error) {
-            return {
-                success: false,
-                data: null,
-                message: error.message || 'Problème dans la recherche du role',
-                errorCode: 500
-            }
+            throw new InternalServerErrorException('Problème dans la recherche du role')
         }
     }
 }

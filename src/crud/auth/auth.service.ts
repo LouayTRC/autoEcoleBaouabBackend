@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, InternalServerErrorException, UnauthorizedException } from '@nestjs/common';
 import { User } from '../user/user.schema';
 import { ServiceResponse } from 'src/common/types';
 import { UserService } from 'src/crud/user/user.service';
@@ -12,7 +12,7 @@ export class AuthService {
     constructor(
         private userService: UserService,
         private configService: ConfigService,
-        private jwtService:JwtService
+        private jwtService: JwtService
     ) { }
 
 
@@ -28,45 +28,27 @@ export class AuthService {
 
 
     async login(form: any): Promise<ServiceResponse<any | null>> {
-        try {
-            const { username, password } = form
+        const { username, password } = form
 
-            const getUser = await this.userService.getUserByIdentifiant(username);
-            if (!getUser.success || !getUser.data) {
-                return { ...getUser }
-            }
+        const getUser = await this.userService.getUserByIdentifiant(username);
 
-            const verifPassword = await bcrypt.compare(password,getUser.data.password)
-            if (!verifPassword) {
-                return {
-                    success:false,
-                    message: "Login/Mdp incorrect",
-                    data:null,
-                    errorCode:400
-                }
-            }
+        const verifPassword = await bcrypt.compare(password, getUser.data.password)
+        if (!verifPassword) {
+            throw new UnauthorizedException("Login/Mdp incorrect !")
+        }
 
-            const token=this.jwtService.sign(
-                {
-                    user_id:getUser.data._id,
-                    user_role:getUser.data.role._id
-                })
+        const token = this.jwtService.sign(
+            {
+                user_id: getUser.data._id,
+                user_role: getUser.data.role._id
+            })
 
-            return {
-                success:true,
-                data:{
-                    user:getUser.data,
-                    token
-                },
-                message:"Login avec succès"
-            }
-        } catch (error) {
-            return {
-                success: false,
-                data: null,
-                message: error.message || "Problème dans la connexion !",
-                errorCode: 500
-            }
+        return {
+            data: {
+                user: getUser.data,
+                token
+            },
+            message: "Login avec succès"
         }
     }
 

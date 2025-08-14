@@ -7,13 +7,13 @@ import { RolesDecorator } from 'src/common/decorators';
 
 
 @Controller('user')
-@UseGuards(RoleGuard)
+// @UseGuards(RoleGuard)
 export class UserController {
 
     constructor(private userService:UserService){}
 
     @Get()
-    @RolesDecorator(Roles.admin)
+    // @RolesDecorator(Roles.admin)
     async getAllUsers():Promise<ServiceResponse<User[]>>{
         return await this.userService.getAllUsers()
     }

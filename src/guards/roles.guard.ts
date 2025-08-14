@@ -26,10 +26,7 @@ export class RoleGuard implements CanActivate {
         }
 
         const roleResult = await this.roleService.getRoleById(roleId);
-        if (!roleResult.success || !roleResult.data) {
-            throw new ForbiddenException('Rôle utilisateur invalide');
-        }
-
+       
         if (!roles.includes(roleResult.data.name)) {
             throw new ForbiddenException('Accès refusé : rôle non autorisé');
         }

@@ -39,10 +39,10 @@ export class AppModule implements NestModule{
 
 
   configure(consumer: MiddlewareConsumer) {
-    consumer
-      .apply(AuthenticateMiddleware)
-      .exclude('auth/login')
-      .forRoutes('*')
+    // consumer
+    //   .apply(AuthenticateMiddleware)
+    //   .exclude('auth/*')
+    //   .forRoutes('*')
   }
   
 }

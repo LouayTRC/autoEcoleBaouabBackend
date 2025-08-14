@@ -1,4 +1,4 @@
-import { Injectable, OnModuleInit } from '@nestjs/common';
+import { ConflictException, Injectable, InternalServerErrorException, NotFoundException, OnModuleInit } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { User, UserDocument } from './user.schema';
 import { RoleService } from 'src/crud/role/role.service';
@@ -6,8 +6,7 @@ import { ServiceResponse } from 'src/common/types';
 import { Model } from 'mongoose';
 import { ConfigService } from '@nestjs/config';
 import bcrypt from 'node_modules/bcryptjs';
-import { first } from 'rxjs';
-import { info } from 'console';
+
 
 @Injectable()
 export class UserService implements OnModuleInit {
@@ -37,24 +36,24 @@ export class UserService implements OnModuleInit {
         else {
             const existingAdmin = await this.getUserByIdentifiant(infos.username);
             if (!existingAdmin.data || !existingAdmin.data) {
-                
+
                 const hashSalt = this.configService.get<string>("HASH_SALT")
                 const adminRole = this.configService.get<string>("ADMIN_ROLE")
-                
+
                 if (!hashSalt || !adminRole) {
                     console.log("parametres manquantes !!");
                     return
                 }
 
-                
-                const getRole=await this.roleService.getRoleByName(adminRole)
-                if (!getRole.success || !getRole.data) {
+
+                const role = await this.roleService.getRoleByName(adminRole)
+                if (!role) {
                     console.log("Role admin introuvable");
                     return
                 }
 
 
-                const password =await bcrypt.hash(infos.password, Number(hashSalt))
+                const password = await bcrypt.hash(infos.password, Number(hashSalt))
 
 
                 await this.userModel.create({
@@ -64,11 +63,11 @@ export class UserService implements OnModuleInit {
                     email: infos.email,
                     cin: infos.cin,
                     password,
-                    role:getRole.data
+                    role
                 })
 
                 console.log("Admin initialisé avec success !!");
-                
+
 
                 return
             }
@@ -79,45 +78,37 @@ export class UserService implements OnModuleInit {
     }
 
 
-    async create(form: any, role: string): Promise<ServiceResponse<User | null>> {
+    async create(form: any, role: string): Promise<ServiceResponse<User>> {
+
+        const { firstName, lastName, username, email, password, cin } = form
+
+        const unique = await this.verifUniqueCredentials(form);
+        if (!unique) {
+            throw new ConflictException("Identifiant déja utilisé")
+        }
+
+        const getRole = await this.roleService.getRoleByName(role);
+
+
+        const hashedPwd = await bcrypt.hash(password, Number(this.configService.get("HASH_SALT")))
         try {
-            const { firstName, lastName, username, email, password, cin } = form
-
-            const unique = await this.verifUniqueCredentials(form);
-            if (!unique) {
-                return { success: false, data: null, message: "", errorCode: 409 }
-            }
-
-            const getRole = await this.roleService.getRoleByName(role);
-            if (!getRole.success || !getRole.data) {
-                return { success: false, data: null, message: getRole.message, errorCode: getRole.errorCode }
-            }
-
-            const hashedPwd = await bcrypt.hash(password, Number(this.configService.get("HASH_SALT")))
-
             const newUser = await this.userModel.create({
                 firstName,
                 lastName,
                 username,
                 email,
-                role: getRole.data,
+                role: getRole,
                 password: hashedPwd,
                 cin
             })
 
             return {
-                success: true,
                 message: "Utilisateur créé avec succès",
                 data: newUser,
             }
 
         } catch (error) {
-            return {
-                success: false,
-                message: error.message || "Problème dans la création de votre compte !",
-                data: null,
-                errorCode: 500
-            }
+            throw new InternalServerErrorException("Problème dans la création de votre compte !")
         }
 
 
@@ -127,51 +118,33 @@ export class UserService implements OnModuleInit {
     async getAllUsers(): Promise<ServiceResponse<User[]>> {
         return this.userModel.find().exec()
             .then(users => ({
-                success: true,
                 data: users || [],
             }))
-            .catch(error => ({
-                success: false,
-                message: error.message || "Problème dans la récupération des utilisateurs !",
-                data: [],
-                errorCode: 500
-            }));
+            .catch(error => {
+                throw new InternalServerErrorException("Problème dans la récupération des utilisateurs !")
+            });
     }
 
 
-    async getUserByIdentifiant(identifiant: string): Promise<ServiceResponse<UserDocument | null>> {
-        try {
-            const user = await this.userModel.findOne({
-                $or: [
-                    { username: identifiant },
-                    { email: identifiant },
-                ]
-            }).populate('role').exec()
+    async getUserByIdentifiant(identifiant: string): Promise<ServiceResponse<UserDocument>> {
+        const user = await this.userModel.findOne({
+            $or: [
+                { username: identifiant },
+                { email: identifiant },
+            ]
+        }).populate('role').exec()
 
 
 
-            if (!user) {
-                return {
-                    success: false,
-                    message: "Username / Email introuvable !!",
-                    errorCode: 404,
-                    data: null
-                };
-            }
-
-            return {
-                success: true,
-                data: user
-            };
-
-        } catch (error) {
-            return {
-                success: false,
-                message: "Problème dans la connexion !",
-                errorCode: 500,
-                data: null
-            };
+        if (!user) {
+            throw new NotFoundException("Username / Email introuvable !!")
         }
+
+        return {
+            data: user
+        };
+
+
     }
 
 

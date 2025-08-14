@@ -24,14 +24,14 @@ export class PermisController {
 
     const existsResponse = await this.permisService.findByType(form.type);
 
-    if (existsResponse.success && existsResponse.data) {
-      return {
-        success:false,
-        data:null,
-        message:"Ce permis existe déja",
-        errorCode:404
-      }
-    }
+    // if (existsResponse.success && existsResponse.data) {
+    //   return {
+    //     success:false,
+    //     data:null,
+    //     message:"Ce permis existe déja",
+    //     errorCode:404
+    //   }
+    // }
     const createResponse = await this.permisService.create(form);
 
     return createResponse
