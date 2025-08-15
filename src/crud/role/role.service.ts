@@ -1,4 +1,4 @@
-import { Injectable, InternalServerErrorException, NotFoundException } from '@nestjs/common';
+import { ConflictException, Injectable, InternalServerErrorException, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Role, RoleDocument } from './role.schema';
 import { Model } from 'mongoose';
@@ -7,16 +7,22 @@ import { ServiceResponse } from 'src/common/types';
 @Injectable()
 export class RoleService {
 
-    constructor(@InjectModel(Role.name) private roleModel: Model<RoleDocument>) { }
+    constructor(
+        @InjectModel(Role.name) private roleModel: Model<RoleDocument>
+    ) { }
 
     async create(form: any): Promise<ServiceResponse<Role | null>> {
-        try {
-            const { name } = form
+        const { name } = form
 
+        const existingRole = await this.getRoleByName(name);
+        if (existingRole) {
+            throw new ConflictException("Ce role existe déja !")
+        }
+
+        try {
             const newRole = await this.roleModel.create({
                 name
             })
-
             return {
                 data: newRole,
                 message: "Role créé avec succès"
@@ -27,36 +33,24 @@ export class RoleService {
     }
 
     async getRoles(): Promise<ServiceResponse<Role[]>> {
-        try {
-            const roles = await this.roleModel.find().exec();
-
-            return {
-                data: roles || [],
-            }
-
-        } catch (error) {
-            throw new InternalServerErrorException("Problème dans la récupération des roles !")
+        const roles = await this.roleModel.find().exec();
+        return {
+            data: roles,
         }
     }
 
 
-    async getRoleByName(name: string): Promise<Role | null> {
-        return await this.roleModel.findOne({ name }).exec();
+    async getRoleByName(name: string): Promise<ServiceResponse<Role | null>> {
+        const role = await this.roleModel.findOne({ name }).exec();
+        return {
+            data: role
+        }
     }
 
-    async getRoleById(id: string): Promise<ServiceResponse<Role>> {
-        try {
-            const role = await this.roleModel.findOne({ _id: id }).exec();
-
-            if (!role) {
-                throw new NotFoundException('Role introuvable !')
-            }
-            return {
-                data: role
-            }
-
-        } catch (error) {
-            throw new InternalServerErrorException('Problème dans la recherche du role')
+    async getRoleById(id: string): Promise<ServiceResponse<Role | null>> {
+        const role = await this.roleModel.findOne({ _id: id }).exec();
+        return {
+            data: role
         }
     }
 }

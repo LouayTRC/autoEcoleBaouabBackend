@@ -1,4 +1,4 @@
-import { Injectable, InternalServerErrorException, UnauthorizedException } from '@nestjs/common';
+import { Injectable, InternalServerErrorException, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { User } from '../user/user.schema';
 import { ServiceResponse } from 'src/common/types';
 import { UserService } from 'src/crud/user/user.service';
@@ -31,6 +31,9 @@ export class AuthService {
         const { username, password } = form
 
         const getUser = await this.userService.getUserByIdentifiant(username);
+        if (!getUser.data) {
+            throw new NotFoundException("Username / Email introuvable !!")
+        }
 
         const verifPassword = await bcrypt.compare(password, getUser.data.password)
         if (!verifPassword) {

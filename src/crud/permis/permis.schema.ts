@@ -9,7 +9,6 @@ export class Permis{
 
     @Prop({required:true,unique:true})
     type:string;
-    
 
 }
 

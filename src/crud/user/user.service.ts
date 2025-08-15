@@ -67,8 +67,6 @@ export class UserService implements OnModuleInit {
                 })
 
                 console.log("Admin initialisé avec success !!");
-
-
                 return
             }
 
@@ -88,10 +86,13 @@ export class UserService implements OnModuleInit {
         }
 
         const getRole = await this.roleService.getRoleByName(role);
+        if (!getRole.data) {
+            throw new NotFoundException("Ce role n'existe pas !")
+        }
 
-
-        const hashedPwd = await bcrypt.hash(password, Number(this.configService.get("HASH_SALT")))
         try {
+            const hashedPwd = await bcrypt.hash(password, Number(this.configService.get("HASH_SALT")))
+
             const newUser = await this.userModel.create({
                 firstName,
                 lastName,
@@ -110,9 +111,6 @@ export class UserService implements OnModuleInit {
         } catch (error) {
             throw new InternalServerErrorException("Problème dans la création de votre compte !")
         }
-
-
-
     }
 
     async getAllUsers(): Promise<ServiceResponse<User[]>> {
@@ -126,7 +124,7 @@ export class UserService implements OnModuleInit {
     }
 
 
-    async getUserByIdentifiant(identifiant: string): Promise<ServiceResponse<UserDocument>> {
+    async getUserByIdentifiant(identifiant: string): Promise<ServiceResponse<UserDocument | null>> {
         const user = await this.userModel.findOne({
             $or: [
                 { username: identifiant },
@@ -134,17 +132,9 @@ export class UserService implements OnModuleInit {
             ]
         }).populate('role').exec()
 
-
-
-        if (!user) {
-            throw new NotFoundException("Username / Email introuvable !!")
-        }
-
         return {
             data: user
         };
-
-
     }
 
 

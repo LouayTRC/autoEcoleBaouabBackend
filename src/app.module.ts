@@ -5,11 +5,12 @@ import { envSchema } from './validation/env.schema';
 import { PermisController } from './crud/permis/permis.controller';
 import { PermisModule } from './crud/permis/permis.module';
 import { PackModule } from './crud/pack/pack.module';
-import { ServicesModule } from './crud/services/services.module';
+
 import { AuthModule } from './crud/auth/auth.module';
 import { RoleModule } from './crud/role/role.module';
 import { UserModule } from './crud/user/user.module';
-import { AuthenticateMiddleware } from './middlewares/authenticate.middleware';
+import { ServicesModule } from './crud/services/services.module';
+import { PackServicesModule } from './crud/pack-services/pack-services.module';
 
 
 @Module({
@@ -27,10 +28,11 @@ import { AuthenticateMiddleware } from './middlewares/authenticate.middleware';
     }),
     PermisModule,
     PackModule,
-    ServicesModule,
     AuthModule,
     RoleModule,
-    UserModule
+    UserModule,
+    ServicesModule,
+    PackServicesModule
   ],
   controllers: [PermisController],
   providers: [],

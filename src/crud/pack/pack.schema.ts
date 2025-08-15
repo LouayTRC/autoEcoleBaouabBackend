@@ -10,14 +10,14 @@ export type PackDocument= Document & Pack
 @Schema(schemaOptions)
 export class Pack{
 
+    @Prop({type:Types.ObjectId, ref:Permis.name, required:true})
+    permis:Types.ObjectId
+
     @Prop({required:true})
     name:string
 
     @Prop({required:true})
     price:number
-
-    @Prop({type:Types.ObjectId, ref:Permis.name, required:true})
-    permis:Types.ObjectId
 
 }
 

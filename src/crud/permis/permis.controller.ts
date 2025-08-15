@@ -2,38 +2,36 @@ import { Controller, Get, Post, Param, Body, NotFoundException } from '@nestjs/c
 import { PermisService } from './permis.service';
 import { Permis } from './permis.schema';
 import { ServiceResponse } from 'src/common/types';
+import { JoiValidationPipe } from 'src/pipes/joi.validation.pipe';
+import { addPermisSchema } from 'src/validation/requests/permis.validators';
+import { objectIdSchema } from 'src/validation/objectId.validators';
 
 @Controller('permis')
 export class PermisController {
   constructor(private readonly permisService: PermisService) {}
 
   @Get()
-  async getAll(): Promise<ServiceResponse<Permis[]>> {
-    return this.permisService.getAll();
+  async getAllPermis(): Promise<ServiceResponse<Permis[]>> {
+    return await this.permisService.getAll();
   }
 
   @Get(':id')
-  async getById(@Param('id') id: string): Promise<ServiceResponse<Permis | null>> {
-    return this.permisService.getPermisById(id);
+  async getPermisById(@Param('id',new JoiValidationPipe(objectIdSchema)) id: string): Promise<ServiceResponse<Permis | null>> {
+
+    const permis=await this.permisService.getPermisById(id);
+    if (!permis.data) {
+      throw new NotFoundException("Ce permis est introuvable !")
+    }
+
+    return {
+      data:permis.data
+    }
   }
 
   @Post()
-  async create(
-    @Body() form: { type: string },
-  ): Promise<ServiceResponse<Permis | null>> {
-
-    const existsResponse = await this.permisService.findByType(form.type);
-
-    // if (existsResponse.success && existsResponse.data) {
-    //   return {
-    //     success:false,
-    //     data:null,
-    //     message:"Ce permis existe déja",
-    //     errorCode:404
-    //   }
-    // }
-    const createResponse = await this.permisService.create(form);
-
-    return createResponse
+  async create(@Body(new JoiValidationPipe(addPermisSchema)) form:any): Promise<ServiceResponse<Permis>> {
+    return await this.permisService.create(form);
   }
+
+
 }

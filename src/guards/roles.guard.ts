@@ -1,4 +1,4 @@
-import { CanActivate, ExecutionContext, ForbiddenException, Injectable, UnauthorizedException } from "@nestjs/common";
+import { CanActivate, ExecutionContext, ForbiddenException, Injectable, NotFoundException, UnauthorizedException } from "@nestjs/common";
 import { Reflector } from "@nestjs/core";
 import { Observable } from "rxjs";
 import { RoleService } from "src/crud/role/role.service";
@@ -26,6 +26,9 @@ export class RoleGuard implements CanActivate {
         }
 
         const roleResult = await this.roleService.getRoleById(roleId);
+        if (!roleResult.data) {
+            throw new NotFoundException("Ce role n'existe pas !")
+        }
        
         if (!roles.includes(roleResult.data.name)) {
             throw new ForbiddenException('Accès refusé : rôle non autorisé');

@@ -8,26 +8,15 @@ import { addRoleSchema } from 'src/validation/requests/role.validators';
 @Controller('role')
 export class RoleController {
 
-    constructor(private readonly roleService:RoleService){}
+    constructor(private readonly roleService: RoleService) { }
 
     @Post()
-    async create(@Body(new JoiValidationPipe(addRoleSchema)) form:any):Promise<ServiceResponse<Role | null>>{
-        try {
-            
-            const existingRole=await this.roleService.getRoleByName(form.name);
-
-            if (!existingRole) {
-                return await this.roleService.create(form);
-            }
-
-            throw new ConflictException("Ce role existe déja !")
-        } catch (error) {
-            throw new InternalServerErrorException("Problème dans la création du role !")
-        }
+    async create(@Body(new JoiValidationPipe(addRoleSchema)) form: any): Promise<ServiceResponse<Role | null>> {
+        return await this.roleService.create(form);
     }
 
     @Get()
-    async getAllRoles():Promise<ServiceResponse<Role[]>>{
+    async getAllRoles(): Promise<ServiceResponse<Role[]>> {
         return await this.roleService.getRoles()
     }
 }
