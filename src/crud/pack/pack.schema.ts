@@ -22,3 +22,12 @@ export class Pack{
 }
 
 export const PackSchema=SchemaFactory.createForClass(Pack)
+
+PackSchema.virtual('packServices', {
+  ref: 'PackServices',   // le modèle cible
+  localField: '_id',     // champ local
+  foreignField: 'pack',  // champ distant
+});
+
+PackSchema.set("toObject", { virtuals: true });
+PackSchema.set("toJSON", { virtuals: true });

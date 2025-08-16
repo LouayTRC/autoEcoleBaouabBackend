@@ -2,23 +2,24 @@ import { ConflictException, forwardRef, Inject, Injectable, InternalServerErrorE
 import { InjectModel } from '@nestjs/mongoose';
 import { Pack } from './pack.schema';
 import { Model } from 'mongoose';
-import { ServiceResponse } from 'src/common/types';
+import { buildPopulateConfig, ServiceResponse } from 'src/common/types';
 import { PermisService } from '../permis/permis.service';
 import { PackServicesService } from '../pack-services/pack-services.service';
+import path from 'path';
 
 @Injectable()
 export class PackService {
 
     constructor(
-        @InjectModel(Pack.name) private packModel:Model<Pack>,
-        @Inject(forwardRef(()=>PackServicesService)) private packServicesService:PackServicesService,
-        private permisService:PermisService        
-    ){}
+        @InjectModel(Pack.name) private packModel: Model<Pack>,
+        @Inject(forwardRef(() => PackServicesService)) private packServicesService: PackServicesService,
+        private permisService: PermisService
+    ) { }
 
-    async addPack(form:any):Promise<ServiceResponse<Pack>>{
-        const {permis_id,name,price,packServices}=form
+    async addPack(form: any): Promise<ServiceResponse<Pack>> {
+        const { permis_id, name, price, packServices } = form
 
-        const permis= await this.permisService.getPermisById(permis_id);
+        const permis = await this.permisService.getPermisById(permis_id);
         if (!permis.data) {
             throw new NotFoundException("Ce permis est introuvable !")
         }
@@ -28,52 +29,59 @@ export class PackService {
         //     throw new ConflictException("Un pack avec le mémé nom pour le meme permis est trouvé !")
         // }
 
+        let newPack
         try {
-            const newPack=await this.packModel.create({
-                permis:permis.data,
+            newPack = await this.packModel.create({
+                permis: permis.data,
                 name,
                 price
             })
-
-            for (const ps of packServices) {
-                await this.packServicesService.addPackService(ps)
-            }
-
-            return {
-                data:newPack,
-                message:"Pack créé avec succès"
-            }
-
         } catch (error) {
             throw new InternalServerErrorException("Problème dans la création du pack !")
         }
 
 
+        for (const ps of packServices) {
+            await this.packServicesService.addPackService(ps, newPack._id.toString())
+        }
+
+        return {
+            data: newPack,
+            message: "Pack créé avec succès"
+        }
+
     }
 
-    async getAllPacks():Promise<ServiceResponse<Pack[]>>{
-        const packs=await this.packModel.find().exec()
+    async getAllPacks(relations?: any[]): Promise<ServiceResponse<Pack[]>> {
+        let populateConfig = relations ? buildPopulateConfig(relations) : [];
+
+        let query = this.packModel.find();
+        if (populateConfig.length > 0) {
+            query=query.populate(populateConfig)
+        }
+
+        const packs = await query.exec()
         return {
-            data:packs
+            data: packs
         }
     }
 
-    async getPacksByPermisId(id:string):Promise<ServiceResponse<Pack[]>>{
-        const permis=await this.permisService.getPermisById(id);
+    async getPacksByPermisId(id: string): Promise<ServiceResponse<Pack[]>> {
+        const permis = await this.permisService.getPermisById(id);
         if (!permis.data) {
             throw new NotFoundException("Ce permis est introuvable !")
         }
 
-        const packs=await this.packModel.find({permis:id}).exec()
+        const packs = await this.packModel.find({ permis: id }).exec()
         return {
-            data:packs
+            data: packs
         }
     }
 
-    async getPackById(id:string):Promise<ServiceResponse<Pack| null>>{
-        const pack=await this.packModel.findById(id).exec()
+    async getPackById(id: string): Promise<ServiceResponse<Pack | null>> {
+        const pack = await this.packModel.findById(id).exec()
         return {
-            data:pack
+            data: pack
         }
     }
 

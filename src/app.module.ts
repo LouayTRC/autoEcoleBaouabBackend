@@ -11,6 +11,7 @@ import { RoleModule } from './crud/role/role.module';
 import { UserModule } from './crud/user/user.module';
 import { ServicesModule } from './crud/services/services.module';
 import { PackServicesModule } from './crud/pack-services/pack-services.module';
+import { CommandeModule } from './crud/commande/commande.module';
 
 
 @Module({
@@ -32,7 +33,8 @@ import { PackServicesModule } from './crud/pack-services/pack-services.module';
     RoleModule,
     UserModule,
     ServicesModule,
-    PackServicesModule
+    PackServicesModule,
+    CommandeModule
   ],
   controllers: [PermisController],
   providers: [],

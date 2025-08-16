@@ -19,8 +19,8 @@ export class PackServicesService {
     //     const pack=this.packService.get
     // }
 
-    async addPackService(form:any):Promise<ServiceResponse<PackServices>>{
-        const {pack_id,service_id,hours}=form
+    async addPackService(form:any,pack_id:string):Promise<ServiceResponse<PackServices>>{
+        const {service_id,hours}=form
 
         const pack=await this.packService.getPackById(pack_id);
         if (!pack.data) {

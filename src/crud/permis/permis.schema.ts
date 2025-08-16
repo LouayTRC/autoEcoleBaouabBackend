@@ -13,3 +13,12 @@ export class Permis{
 }
 
 export const PermisSchema=SchemaFactory.createForClass(Permis)
+
+PermisSchema.virtual('packs', {
+  ref: 'Pack',   // le modèle cible
+  localField: '_id',     // champ local
+  foreignField: 'permis',  // champ distant
+});
+
+PermisSchema.set("toObject", { virtuals: true });
+PermisSchema.set("toJSON", { virtuals: true });
