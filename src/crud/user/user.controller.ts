@@ -2,7 +2,6 @@ import { Controller, Get, UseGuards } from '@nestjs/common';
 import { UserService } from './user.service';
 import { Roles, ServiceResponse } from 'src/common/types';
 import { User } from './user.schema';
-import { RoleGuard } from 'src/guards/roles.guard';
 import { RolesDecorator } from 'src/common/decorators';
 
 

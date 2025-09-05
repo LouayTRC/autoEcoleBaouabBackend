@@ -1,16 +1,26 @@
 import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
 import { schemaOptions } from "src/common/types";
-import { Pack } from "../pack/pack.schema";
-import { Types } from "mongoose";
+import { HydratedDocument, ObjectId, Types } from "mongoose";
 import { User } from "../user/user.schema";
 
-export type CommandeDocument= Document & Commande
+
+export type CommandeDocument = HydratedDocument<Commande>;
+
 
 @Schema(schemaOptions)
 export class Commande{
 
-    @Prop({type:[{type:Types.ObjectId, ref:Pack.name}],required:true})
-    packs:Pack[]
+    @Prop({type:[{type:Object}],required:true})
+    packs:{
+        pack_id: Types.ObjectId;
+        name: string;
+        price: number;
+        packServices:{
+            packService_id: Types.ObjectId;
+            service: Types.ObjectId;
+            hours: number
+        }[]
+    }[]
 
     @Prop({required:true})
     price:number

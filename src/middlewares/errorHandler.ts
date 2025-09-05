@@ -19,10 +19,8 @@ export class ErrorHandler implements ExceptionFilter {
             } else if (typeof res === 'object' && res != null) {
                 const obj = res as Record<string, any>;
 
-    
                 if (Array.isArray(obj.message)) {
                     messages = obj.message.map(m => {
-                     
                         if (typeof m === 'string') return { message: m };
                         return m;
                     });
@@ -34,9 +32,12 @@ export class ErrorHandler implements ExceptionFilter {
             messages = [{ message: exception.message }];
         }
 
+        // Si un seul message, renvoie une string, sinon renvoie le tableau
+        const formattedMessage = messages.length === 1 ? messages[0].message : messages;
+
         response.status(status).json({
             success: false,
-            messages,
+            messages: formattedMessage,
             timestamp: new Date().toISOString(),
         });
     }

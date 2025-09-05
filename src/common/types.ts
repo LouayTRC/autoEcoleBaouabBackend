@@ -14,8 +14,17 @@ export enum Roles {
 
 export const schemaOptions: SchemaOptions = {
   versionKey: false,
+  toJSON: {
+    virtuals: true,
+    transform: (_, ret) => {
+    const { _id, ...rest } = ret;
+    return { id: _id.toString(), ...rest };
+  },
+  },
+  toObject: {
+    virtuals: true,
+  },
 };
-
 
 
 export function buildPopulateConfig(relations: any[]): any[] {

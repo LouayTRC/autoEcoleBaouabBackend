@@ -1,4 +1,4 @@
-import { ConflictException, Injectable, InternalServerErrorException, NotFoundException, OnModuleInit } from '@nestjs/common';
+import { BadRequestException, ConflictException, Injectable, InternalServerErrorException, NotFoundException, OnModuleInit } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { User, UserDocument } from './user.schema';
 import { RoleService } from 'src/crud/role/role.service';
@@ -9,7 +9,7 @@ import bcrypt from 'node_modules/bcryptjs';
 
 
 @Injectable()
-export class UserService implements OnModuleInit {
+export class UserService {
 
     constructor(
         @InjectModel(User.name) private userModel: Model<UserDocument>,
@@ -21,15 +21,14 @@ export class UserService implements OnModuleInit {
 
     async onModuleInit() {
         const infos = {
-            firstName: this.configService.get<string>("ADMIN_FIRST_NAME"),
-            lastName: this.configService.get<string>("ADMIN_LAST_NAME"),
+            fullname: this.configService.get<string>("ADMIN_FULLNAME"),
             username: this.configService.get<string>("ADMIN_USERNAME"),
             email: this.configService.get<string>("ADMIN_EMAIL"),
-            cin: this.configService.get<string>("ADMIN_CIN"),
+            phone: this.configService.get<string>("ADMIN_PHONE"),
             password: this.configService.get<string>("ADMIN_PASSWORD")
         }
 
-        if (!infos.firstName || !infos.lastName || !infos.username || !infos.email || !infos.cin || !infos.password) {
+        if (!infos.fullname || !infos.phone || !infos.username || !infos.email || !infos.password) {
             console.log("Admin infos introuvables !!");
         }
 
@@ -46,8 +45,9 @@ export class UserService implements OnModuleInit {
                 }
 
 
+
                 const role = await this.roleService.getRoleByName(adminRole)
-                if (!role) {
+                if (!role.data) {
                     console.log("Role admin introuvable");
                     return
                 }
@@ -57,13 +57,12 @@ export class UserService implements OnModuleInit {
 
 
                 await this.userModel.create({
-                    firstName: infos.firstName,
-                    lastName: infos.lastName,
+                    fullname: infos.fullname,
                     username: infos.username,
                     email: infos.email,
-                    cin: infos.cin,
+                    phone: infos.phone,
                     password,
-                    role
+                    role: role.data._id
                 })
 
                 console.log("Admin initialisé avec success !!");
@@ -78,11 +77,12 @@ export class UserService implements OnModuleInit {
 
     async create(form: any, role: string): Promise<ServiceResponse<User>> {
 
-        const { firstName, lastName, username, email, password, cin } = form
+        const { fullname, username, email, password, phone } = form
+   
 
-        const unique = await this.verifUniqueCredentials(form);
-        if (!unique) {
-            throw new ConflictException("Identifiant déja utilisé")
+        const verifUniqueErrors = await this.verifUniqueCredentials(form);
+        if (verifUniqueErrors.length > 0) {      
+            throw new ConflictException(verifUniqueErrors);
         }
 
         const getRole = await this.roleService.getRoleByName(role);
@@ -94,13 +94,12 @@ export class UserService implements OnModuleInit {
             const hashedPwd = await bcrypt.hash(password, Number(this.configService.get("HASH_SALT")))
 
             const newUser = await this.userModel.create({
-                firstName,
-                lastName,
+                fullname,
                 username,
                 email,
-                role: getRole,
-                password: hashedPwd,
-                cin
+                phone,
+                role: getRole.data._id,
+                password: hashedPwd
             })
 
             return {
@@ -123,6 +122,15 @@ export class UserService implements OnModuleInit {
             });
     }
 
+    async getUserById(id: string): Promise<ServiceResponse<UserDocument | null>> {
+        const user = await this.userModel.findOne({
+            _id: id
+        }).populate('role').exec();
+
+        return {
+            data: user
+        };
+    }
 
     async getUserByIdentifiant(identifiant: string): Promise<ServiceResponse<UserDocument | null>> {
         const user = await this.userModel.findOne({
@@ -130,7 +138,7 @@ export class UserService implements OnModuleInit {
                 { username: identifiant },
                 { email: identifiant },
             ]
-        }).populate('role').exec()
+        }).select('+password').populate('role').exec()
 
         return {
             data: user
@@ -139,19 +147,35 @@ export class UserService implements OnModuleInit {
 
 
 
-    async verifUniqueCredentials(form: any): Promise<boolean> {
+    async verifUniqueCredentials(form: any): Promise<{ field: string; message: string }[]> {
+        const errors: { field: string; message: string }[] = [];
+
         try {
             const user = await this.userModel.findOne({
                 $or: [
                     { username: form.username },
-                    { email: form.email },
-                    { cin: form.cin }
+                    { email: form.email }
                 ]
             }).exec();
-            return !user;
+
+            if (!user) return errors;
+
+            if (user.username === form.username) {
+                errors.push({ field: 'username', message: 'Ce username est déjà utilisé' });
+            }
+
+            if (user.email === form.email) {
+                errors.push({ field: 'email', message: "Cet email est déjà utilisé" });
+            }
+
+            return errors;
+
         } catch (error) {
-            return false;
+            errors.push({ field: 'server', message: 'Erreur serveur, réessayez plus tard' });
+            return errors;
         }
     }
+
+
 
 }

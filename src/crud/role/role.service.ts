@@ -15,7 +15,7 @@ export class RoleService {
         const { name } = form
 
         const existingRole = await this.getRoleByName(name);
-        if (existingRole) {
+        if (existingRole.data) {
             throw new ConflictException("Ce role existe déja !")
         }
 
@@ -40,7 +40,7 @@ export class RoleService {
     }
 
 
-    async getRoleByName(name: string): Promise<ServiceResponse<Role | null>> {
+    async getRoleByName(name: string): Promise<ServiceResponse<RoleDocument | null>> {
         const role = await this.roleModel.findOne({ name }).exec();
         return {
             data: role
@@ -48,7 +48,7 @@ export class RoleService {
     }
 
     async getRoleById(id: string): Promise<ServiceResponse<Role | null>> {
-        const role = await this.roleModel.findOne({ _id: id }).exec();
+        const role = await this.roleModel.findById(id).exec();
         return {
             data: role
         }

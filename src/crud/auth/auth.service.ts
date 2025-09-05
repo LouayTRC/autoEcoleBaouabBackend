@@ -5,6 +5,7 @@ import { UserService } from 'src/crud/user/user.service';
 import { ConfigService } from '@nestjs/config';
 import bcrypt from 'node_modules/bcryptjs';
 import { JwtService } from '@nestjs/jwt';
+import { Response } from 'express';
 
 @Injectable()
 export class AuthService {
@@ -27,33 +28,55 @@ export class AuthService {
     }
 
 
-    async login(form: any): Promise<ServiceResponse<any | null>> {
-        const { username, password } = form
+    // async login(form: any): Promise<ServiceResponse<any | null>> {
+    //     const { identifiant, password } = form
 
-        const getUser = await this.userService.getUserByIdentifiant(username);
+    //     const getUser = await this.userService.getUserByIdentifiant(identifiant);
+    //     if (!getUser.data) {
+    //         throw new NotFoundException("Username / Email introuvable !!")
+    //     }
+
+    //     const verifPassword = await bcrypt.compare(password, getUser.data.password)
+    //     if (!verifPassword) {
+    //         throw new UnauthorizedException("Login/Mdp incorrect !")
+    //     }
+
+    //     const token = this.jwtService.sign(
+    //         {
+    //             user_id: getUser.data.id,
+    //             user_role: getUser.data.role.id
+    //         })
+
+
+
+    //     return {
+    //         data: {
+    //             user: getUser.data,
+    //             token
+    //         },
+    //         message: "Login avec succès"
+    //     }
+    // }
+
+    async validateUser(identifiant: string, pwd: string) {
+        const getUser = await this.userService.getUserByIdentifiant(identifiant);
         if (!getUser.data) {
-            throw new NotFoundException("Username / Email introuvable !!")
+            return null;
         }
 
-        const verifPassword = await bcrypt.compare(password, getUser.data.password)
+        const verifPassword = await bcrypt.compare(pwd, getUser.data.password);
         if (!verifPassword) {
-            throw new UnauthorizedException("Login/Mdp incorrect !")
+            return null;
         }
 
-        const token = this.jwtService.sign(
-            {
-                user_id: getUser.data._id,
-                user_role: getUser.data.role._id
-            })
-
-        return {
-            data: {
-                user: getUser.data,
-                token
-            },
-            message: "Login avec succès"
-        }
+        return (await this.userService.getUserById(getUser.data.id)).data;
     }
 
 
+    generateJwt(user: any) {
+        return this.jwtService.sign({
+            user_id: user.id,
+            user_role: user.role.id,
+        });
+    }
 }

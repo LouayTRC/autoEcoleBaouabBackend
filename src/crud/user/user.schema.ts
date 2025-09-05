@@ -10,10 +10,7 @@ export type UserDocument = HydratedDocument<User>;
 export class User{
 
     @Prop({required:true})
-    firstName:string
-
-    @Prop({required:true})
-    lastName:string
+    fullname:string
 
     @Prop({required:true,unique:true})
     username:string
@@ -21,10 +18,10 @@ export class User{
     @Prop({required:true,unique:true})
     email:string
 
-    @Prop({required:true,unique:true,length:8})
-    cin:string
+    @Prop({required:true,length:8})
+    phone:string
 
-    @Prop({required:true})
+    @Prop({required:true,select:false})
     password:string
 
     @Prop({type:Types.ObjectId,ref:Role.name,required:true})
@@ -33,3 +30,4 @@ export class User{
 }
 
 export const UserSchema=SchemaFactory.createForClass(User)
+

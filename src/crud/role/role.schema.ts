@@ -1,7 +1,9 @@
 import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
+import { HydratedDocument } from "mongoose";
 import { schemaOptions } from "src/common/types";
 
-export type RoleDocument = Document & Role
+export type RoleDocument = HydratedDocument<Role>;
+
 
 
 @Schema(schemaOptions)
