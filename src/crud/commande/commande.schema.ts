@@ -2,6 +2,7 @@ import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
 import { schemaOptions } from "src/common/types";
 import { HydratedDocument, ObjectId, Types } from "mongoose";
 import { User } from "../user/user.schema";
+import { PackSnapshot, PackSnapshotSchema } from "../pack/pack.schema";
 
 
 export type CommandeDocument = HydratedDocument<Commande>;
@@ -10,17 +11,8 @@ export type CommandeDocument = HydratedDocument<Commande>;
 @Schema(schemaOptions)
 export class Commande{
 
-    @Prop({type:[{type:Object}],required:true})
-    packs:{
-        pack_id: Types.ObjectId;
-        name: string;
-        price: number;
-        packServices:{
-            packService_id: Types.ObjectId;
-            service: Types.ObjectId;
-            hours: number
-        }[]
-    }[]
+    @Prop({type:[PackSnapshotSchema],default:[]})
+    packs:PackSnapshot[]
 
     @Prop({required:true})
     price:number
@@ -30,6 +22,9 @@ export class Commande{
 
     @Prop({type:Types.ObjectId,ref:User.name,required:true})
     client:User
+
+    @Prop({type:Number,required:true})
+    status:Number
 }
 
 export const CommandeSchema=SchemaFactory.createForClass(Commande)

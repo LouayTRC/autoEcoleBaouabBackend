@@ -4,7 +4,7 @@ import { ClientSession, Model } from 'mongoose';
 import { Tarif, TarifDocument } from './tarif.schema';
 import { ServicesService } from '../services/services.service';
 import { PermisService } from '../permis/permis.service';
-import { ServiceResponse } from 'src/common/types';
+import { buildPopulateConfig, ServiceResponse } from 'src/common/types';
 
 
 @Injectable()
@@ -25,10 +25,10 @@ export class TarifService {
 
 
 
-        const getService = await this.servicesService.getServiceById(service_id,session);
+        const getService = await this.servicesService.getServiceById(service_id, session);
         if (!getService.data) {
             console.log("lena");
-            
+
             throw new NotFoundException("Ce Service est introuvable !");
         }
 
@@ -83,79 +83,94 @@ export class TarifService {
     }
 
 
-   async updateTarifs(
-    service_id: string,
-    tarifs: any[],
-    session: ClientSession
-): Promise<ServiceResponse<any>> {
-    console.log("ser", service_id);
-    
-    const getService = await this.servicesService.getServiceById(service_id, session);
-    if (!getService.data) {
-        throw new NotFoundException("Ce Service est introuvable !");
+    async updateTarifs(
+        service_id: string,
+        tarifs: any[],
+        session: ClientSession
+    ): Promise<ServiceResponse<any>> {
+        console.log("ser", service_id);
+
+        const getService = await this.servicesService.getServiceById(service_id, session);
+        if (!getService.data) {
+            throw new NotFoundException("Ce Service est introuvable !");
+        }
+
+        console.log("tarifs", tarifs);
+
+        // 1. Récupérer tous les tarifs existants du service
+        const existingTarifs = await this.tarifModel.find({
+            service: getService.data._id
+        }).populate('permis').session(session);
+
+        // 2. Supprimer les tarifs qui ne sont pas dans la nouvelle liste
+        const tarifsToDelete = existingTarifs.filter(existingTarif =>
+            !tarifs.some(tarif => existingTarif.permis.name === tarif.permisName)
+        );
+
+        if (tarifsToDelete.length > 0) {
+            const deleteIds = tarifsToDelete.map(tarif => tarif._id);
+            await this.tarifModel.deleteMany({
+                _id: { $in: deleteIds }
+            }).session(session);
+        }
+
+        // 3. Mettre à jour les tarifs existants
+        const tarifsToUpdate = existingTarifs.filter(existingTarif =>
+            tarifs.some(tarif => existingTarif.permis.name === tarif.permisName)
+        );
+
+        for (const existingTarif of tarifsToUpdate) {
+            const newTarifData = tarifs.find(tarif => existingTarif.permis.name === tarif.permisName);
+            existingTarif.price = newTarifData.price;
+            await existingTarif.save({ session });
+        }
+
+        // 4. Créer les nouveaux tarifs
+        const tarifsToCreate = tarifs.filter(tarif =>
+            !existingTarifs.some(existingTarif => existingTarif.permis.name === tarif.permisName)
+        );
+
+        const newTarifs: Tarif[] = [];
+        for (const tarifItem of tarifsToCreate) {
+            const getPermis = await this.permisService.getPermisByName(tarifItem.permisName);
+
+            if (getPermis.data) {
+                const newTarif = await this.tarifModel.create([{
+                    permis: getPermis.data._id,
+                    service: getService.data._id,
+                    price: tarifItem.price,
+                    image: 'permis/allPermis.jpeg'
+                }], { session });
+
+                newTarifs.push(newTarif[0]);
+            }
+        }
+
+        // 5. Récupérer tous les tarifs finaux du service
+        const finalTarifs = await this.tarifModel.find({
+            service: getService.data._id
+        }).populate('permis').session(session);
+
+        return {
+            data: finalTarifs,
+            message: `Tarifs mis à jour avec succès`
+        };
     }
 
-    console.log("tarifs", tarifs);
 
-    // 1. Récupérer tous les tarifs existants du service
-    const existingTarifs = await this.tarifModel.find({
-        service: getService.data._id
-    }).populate('permis').session(session);
+    async getTarifsByPermis(permis_id:string,relations?:any[]):Promise<ServiceResponse<Tarif[]>>{
+        const populateConfig= relations ? buildPopulateConfig(relations) : []
 
-    // 2. Supprimer les tarifs qui ne sont pas dans la nouvelle liste
-    const tarifsToDelete = existingTarifs.filter(existingTarif => 
-        !tarifs.some(tarif => existingTarif.permis.name === tarif.permisName)
-    );
+        const permis=await this.permisService.getPermisById(permis_id);
+        if (!permis.data) {
+            throw new NotFoundException("Ce permis est introuvable !");
+        }
 
-    if (tarifsToDelete.length > 0) {
-        const deleteIds = tarifsToDelete.map(tarif => tarif._id);
-        await this.tarifModel.deleteMany({
-            _id: { $in: deleteIds }
-        }).session(session);
-    }
-
-    // 3. Mettre à jour les tarifs existants
-    const tarifsToUpdate = existingTarifs.filter(existingTarif => 
-        tarifs.some(tarif => existingTarif.permis.name === tarif.permisName)
-    );
-
-    for (const existingTarif of tarifsToUpdate) {
-        const newTarifData = tarifs.find(tarif => existingTarif.permis.name === tarif.permisName);
-        existingTarif.price = newTarifData.price;
-        await existingTarif.save({ session });
-    }
-
-    // 4. Créer les nouveaux tarifs
-    const tarifsToCreate = tarifs.filter(tarif => 
-        !existingTarifs.some(existingTarif => existingTarif.permis.name === tarif.permisName)
-    );
-
-    const newTarifs:Tarif[] = [];
-    for (const tarifItem of tarifsToCreate) {
-        const getPermis = await this.permisService.getPermisByName(tarifItem.permisName);
+        const tarifs=await this.tarifModel.find({permis:permis.data._id}).populate(populateConfig)
         
-        if (getPermis.data) {
-            const newTarif = await this.tarifModel.create([{
-                permis: getPermis.data._id,
-                service: getService.data._id,
-                price: tarifItem.price,
-                image: 'permis/allPermis.jpeg'
-            }], { session });
-
-            newTarifs.push(newTarif[0]);
+        return {
+            data:tarifs
         }
     }
-
-    // 5. Récupérer tous les tarifs finaux du service
-    const finalTarifs = await this.tarifModel.find({
-        service: getService.data._id
-    }).populate('permis').session(session);
-
-    return {
-        data: finalTarifs,
-        message: `Tarifs mis à jour avec succès`
-    };
-}
-
 
 }

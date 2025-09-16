@@ -7,12 +7,16 @@ import { Commande, CommandeSchema } from './commande.schema';
 import { UserModule } from '../user/user.module';
 
 import { RoleModule } from '../role/role.module';
+import { PackModule } from '../pack/pack.module';
+import { EmailModule } from '../email/email.module';
 
 @Module({
   imports:[
     MongooseModule.forFeature([{name:Commande.name,schema:CommandeSchema}]),
     UserModule,
-    RoleModule
+    RoleModule,
+    PackModule,
+    EmailModule
   ],
   providers: [CommandeService],
   controllers: [CommandeController]

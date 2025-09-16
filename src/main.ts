@@ -8,10 +8,10 @@ import { join } from 'path';
 
 async function bootstrap() {
   
-  const httpsOptions = {
-    key: fs.readFileSync('./cert/key.pem'),
-    cert: fs.readFileSync('./cert/cert.pem'),
-  };
+  // const httpsOptions = {
+  //   key: fs.readFileSync('./cert/key.pem'),
+  //   cert: fs.readFileSync('./cert/cert.pem'),
+  // };
   
   // Dev
   const app = await NestFactory.create(AppModule);

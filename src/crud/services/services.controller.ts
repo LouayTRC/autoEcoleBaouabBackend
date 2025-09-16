@@ -10,6 +10,7 @@ import { InjectConnection, InjectModel } from '@nestjs/mongoose';
 import { log } from 'node:console';
 import { objectIdSchema } from 'src/validation/objectId.validators';
 import { JoiValidationPipe } from 'src/pipes/joi.validation.pipe';
+import { Tarif } from '../tarif/tarif.schema';
 
 @Controller('services')
 export class ServicesController {
@@ -140,6 +141,11 @@ export class ServicesController {
         return await this.serviceService.getAllServices();
     }
 
+    @Get("permis/:id")
+    async getServicesByPermis(@Param("id") id:string):Promise<ServiceResponse<Tarif[]>>{
+        return await this.serviceService.getTarifsWithServicesByPermis(id);
+    }
+
     @Get(":id")
     async getServiceById(@Param('id') id: string): Promise<ServiceResponse<Services>> {
         const service = await this.serviceService.getServiceById(id);
@@ -159,4 +165,6 @@ export class ServicesController {
       ): Promise<ServiceResponse<null>> {
         return await this.serviceService.delete(id);
       }
+
+
 }

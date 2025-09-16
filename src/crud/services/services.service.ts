@@ -6,6 +6,9 @@ import { ServiceResponse } from 'src/common/types';
 import { TarifService } from '../tarif/tarif.service';
 import path from 'path';
 import { Tarif } from '../tarif/tarif.schema';
+import { PermisWithTarifs } from 'src/common/snapshotTypes';
+import { populate } from 'dotenv';
+import { PermisService } from '../permis/permis.service';
 
 
 
@@ -14,7 +17,7 @@ export class ServicesService {
 
     constructor(
         @InjectModel(Services.name) private servicesModel: Model<Services>,
-        @Inject(forwardRef(() => TarifService)) private readonly tarifService: TarifService,
+        @Inject(forwardRef(() => TarifService)) private readonly tarifService: TarifService
     ) { }
 
 
@@ -100,8 +103,8 @@ export class ServicesService {
             })
             .exec()
 
-        services = services.map((service:any) => {
-            service.tarifs = service.tarifs.filter((tarif:Tarif) => tarif.permis !== null);
+        services = services.map((service: any) => {
+            service.tarifs = service.tarifs.filter((tarif: Tarif) => tarif.permis !== null);
             return service;
         });
         return {
@@ -116,10 +119,16 @@ export class ServicesService {
         }
     }
 
-    async getServiceByName(name: string, session: ClientSession): Promise<ServiceResponse<Services | null>> {
-        const service = await this.servicesModel.findOne({ name }).session(session ?? null).exec();
+    async getServiceByName(name: string, session?: ClientSession): Promise<ServiceResponse<PermisWithTarifs | null>> {
+        const service = await this.servicesModel.findOne({ name })
+            .populate({
+                path: "tarifs",
+                populate: { path: "service" }, 
+            })
+            .session(session ?? null)
+            .exec();
         return {
-            data: service
+            data: service as PermisWithTarifs | null
         }
     }
 
@@ -207,6 +216,21 @@ export class ServicesService {
                 throw error;
             }
             throw new InternalServerErrorException("Erreur lors de la suppression du service");
+        }
+    }
+
+
+    async getTarifsWithServicesByPermis(permis_id:string):Promise<ServiceResponse<Tarif[]>>{
+        const relations=[
+            {
+                path:"service"
+            }
+        ]
+
+        const tarifs=await this.tarifService.getTarifsByPermis(permis_id,relations)
+
+        return {
+            data:tarifs.data
         }
     }
 

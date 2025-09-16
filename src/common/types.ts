@@ -8,7 +8,7 @@ export interface ServiceResponse<T> {
 
 export enum Roles {
   admin = "ADMIN",
-  user = "USER"
+  client = "CLIENT"
 }
 
 

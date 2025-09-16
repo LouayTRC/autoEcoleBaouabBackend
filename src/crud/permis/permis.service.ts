@@ -1,8 +1,8 @@
 import { ConflictException, Injectable, InternalServerErrorException, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Permis, PermisDocument } from './permis.schema';
-import { Model } from 'mongoose';
-import { ServiceResponse } from 'src/common/types';
+import { ClientSession, Model } from 'mongoose';
+import { buildPopulateConfig, ServiceResponse } from 'src/common/types';
 
 @Injectable()
 export class PermisService {
@@ -111,11 +111,13 @@ export class PermisService {
         };
     }
 
-    async getPermisById(id: string): Promise<ServiceResponse<Permis | null>> {
+    async getPermisById(id: string,relations?:any[],session?:ClientSession): Promise<ServiceResponse<PermisDocument | null>> {
+        const populateConfig= relations ? buildPopulateConfig(relations) : []
+
         const permis = await this.permisModel.findOne({ 
             _id: id, 
             deletedAt: { $exists: false } 
-        }).exec();
+        }).populate(populateConfig).session(session ?? null).exec();
         return {
             data: permis
         }

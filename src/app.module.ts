@@ -13,6 +13,8 @@ import { CommandeModule } from './crud/commande/commande.module';
 import { AuthenticateMiddleware } from './middlewares/authenticate.middleware';
 import { FileUploadModule } from './crud/fileUpload/fileUpload.module';
 import { TarifModule } from './crud/tarif/tarif.module';
+import { PackModule } from './crud/pack/pack.module';
+import { EmailModule } from './crud/email/email.module';
 
 
 
@@ -36,7 +38,9 @@ import { TarifModule } from './crud/tarif/tarif.module';
     ServicesModule,
     CommandeModule,
     FileUploadModule,
-    TarifModule
+    TarifModule,
+    PackModule,
+    EmailModule
   ],
   controllers: [PermisController],
   providers: [],
@@ -45,10 +49,10 @@ export class AppModule implements NestModule{
 
 
   configure(consumer: MiddlewareConsumer) {
-    // consumer
-    //   .apply(AuthenticateMiddleware)
-    //   .exclude('auth/*')
-    //   .forRoutes('*')
+    consumer
+      .apply(AuthenticateMiddleware)
+      .exclude('auth/*')
+      .forRoutes('*')
   }
   
 }

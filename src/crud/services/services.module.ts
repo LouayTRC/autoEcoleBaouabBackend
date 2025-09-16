@@ -5,6 +5,7 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { Services, ServicesSchema } from './service.schema';
 import { TarifModule } from '../tarif/tarif.module';
 import { FileUploadModule } from '../fileUpload/fileUpload.module';
+import { PermisModule } from '../permis/permis.module';
 
 @Module({
   imports:[

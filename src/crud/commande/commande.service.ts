@@ -1,59 +1,62 @@
-import { Injectable, InternalServerErrorException, NotFoundException } from '@nestjs/common';
+import { ForbiddenException, Injectable, InternalServerErrorException, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Commande } from './commande.schema';
-import { Model } from 'mongoose';
+import { ClientSession, Model } from 'mongoose';
 import { buildPopulateConfig, ServiceResponse } from 'src/common/types';
-// import { PackService } from '../pack/pack.service';
+import { PackService } from '../pack/pack.service';
+import { ServiceDetail } from 'src/common/snapshotTypes';
 
 @Injectable()
 export class CommandeService {
 
     constructor(
         @InjectModel(Commande.name) private commandeModel: Model<Commande>,
-        // private packService: PackService
+        private packService: PackService
     ) { }
 
-    // async addCommande(form: any, user_id: string): Promise<ServiceResponse<Commande>> {
-    //     const { pack_id } = form
+    async addCommande(form: any, user_id: string,session?:ClientSession): Promise<ServiceResponse<Commande>> {
+        const { pack_id } = form
 
-    //     const relations= [
-    //         {
-    //             path:"packServices",
-    //             childs:[
-    //                 {path:"service"}
-    //             ]
-    //         }
-    //     ]
-    //     const pack = await this.packService.getPackById(pack_id,relations);
-    //     if (!pack.data) {
-    //         throw new NotFoundException("Ce pack est introuvable !");
-    //     }
+        const pack = await this.packService.getPackById(pack_id,session);
+        if (!pack.data) {
+            throw new NotFoundException("Ce pack est introuvable !");
+        }
 
-    //     try {
-    //         const commande = await this.commandeModel.create({
-    //             price: pack.data.price,
-    //             packs: [{
-    //                 pack_id:pack.data.id,
-    //                 name: pack.data.name,
-    //                 price: pack.data.price,
-    //                 packServices: pack.data.packServices ? pack.data.packServices.map((p)=>({
-    //                     packService_id:p.id,
-    //                     service:p.service,
-    //                     hours:p.hours
-    //                 })) : []
-    //             }],
-    //             client: user_id,
-    //             created_at: new Date().toISOString()
-    //         })
+        if (pack.data.status!=1) {
+            throw new ForbiddenException("Ce pack n'est pas disponible !")
+        }
 
-    //         return {
-    //             data: commande,
-    //             message: "Commande créé avec succès !"
-    //         }
-    //     } catch (error) {
-    //         throw new InternalServerErrorException("Problème dans la création du commande !")
-    //     }
-    // }
+        console.log("pack : ",pack.data);
+        
+
+        try {
+            const commande = await this.commandeModel.create({
+                client:user_id,
+                packs:[
+                    {
+                        pack:pack.data,
+                        name:pack.data.name,
+                        price:pack.data.price,
+                        reduction:pack.data.reduction,
+                        total:pack.data.total,
+                        services:pack.data.details
+                    }
+                ],
+                price:pack.data.price,
+                status:0,
+                created_at: new Date().toISOString()
+            })
+
+            return {
+                data: commande,
+                message: "Commande créé avec succès !"
+            }
+        } catch (error) {
+            console.error("err",error);
+            
+            throw new InternalServerErrorException("Problème dans la création du commande !")
+        }
+    }
 
 
     // async getAllCommands(relations?: any[]): Promise<ServiceResponse<Commande[]>> {
