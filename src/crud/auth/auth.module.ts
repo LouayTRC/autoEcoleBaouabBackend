@@ -8,6 +8,8 @@ import { AuthController } from './auth.controller';
 import { PassportModule } from '@nestjs/passport';
 import { LocalStrategy } from 'src/strategies/local.strategy';
 import { LoginValidationMiddleware } from 'src/middlewares/loginValidation.middleware';
+import { GoogleStrategy } from 'src/strategies/google.strategy';
+import { FacebookStrategy } from 'src/strategies/facebook.strategy';
 
 @Module({
     imports: [
@@ -23,7 +25,7 @@ import { LoginValidationMiddleware } from 'src/middlewares/loginValidation.middl
             })
         })
     ],
-    providers: [AuthService, LocalStrategy],
+    providers: [AuthService, LocalStrategy,GoogleStrategy,FacebookStrategy],
     exports: [AuthService, JwtModule],
     controllers: [AuthController]
 })

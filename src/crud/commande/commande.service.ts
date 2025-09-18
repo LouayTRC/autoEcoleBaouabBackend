@@ -59,42 +59,42 @@ export class CommandeService {
     }
 
 
-    // async getAllCommands(relations?: any[]): Promise<ServiceResponse<Commande[]>> {
-    //     try {
-    //         const populateConfig = relations ? buildPopulateConfig(relations) : [];
+    async getAllCommands(relations?: any[]): Promise<ServiceResponse<Commande[]>> {
+        try {
+            const populateConfig = relations ? buildPopulateConfig(relations) : [];
 
-    //         let query = this.commandeModel.find();
-    //         if (populateConfig.length > 0) {
-    //             query = query.populate(populateConfig);
-    //         }
+            let query = this.commandeModel.find();
+            if (populateConfig.length > 0) {
+                query = query.populate(populateConfig);
+            }
 
-    //         const commandes = await query.exec()
-    //         return {
-    //             data: commandes
-    //         }
-    //     } catch (error) {
-    //         throw new InternalServerErrorException("Problème dans la récupération des commandes !")
-    //     }
-
-
-    // }
+            const commandes = await query.exec()
+            return {
+                data: commandes
+            }
+        } catch (error) {
+            throw new InternalServerErrorException("Problème dans la récupération des commandes !")
+        }
 
 
-    // async getClientCommands(user_id: string,relations?:any[]): Promise<ServiceResponse<Commande[]>> {
-    //     try {
-    //         const populateConfig = relations ? buildPopulateConfig(relations) : [];
+    }
 
-    //         let query = this.commandeModel.find({client:user_id});
-    //         if (populateConfig.length > 0) {
-    //             query = query.populate(populateConfig);
-    //         }
 
-    //         const commandes = await query.exec()
-    //         return {
-    //             data: commandes
-    //         }
-    //     } catch (error) {
-    //         throw new InternalServerErrorException("Problème dans la récupération des commandes !")
-    //     }
-    // }
+    async getClientCommands(user_id: string,relations?:any[]): Promise<ServiceResponse<Commande[]>> {
+        try {
+            const populateConfig = relations ? buildPopulateConfig(relations) : [];
+
+            let query = this.commandeModel.find({client:user_id});
+            if (populateConfig.length > 0) {
+                query = query.populate(populateConfig);
+            }
+
+            const commandes = await query.exec()
+            return {
+                data: commandes
+            }
+        } catch (error) {
+            throw new InternalServerErrorException("Problème dans la récupération des commandes !")
+        }
+    }
 }

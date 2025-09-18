@@ -18,13 +18,13 @@ export class AuthService {
 
 
     async register(form: any): Promise<ServiceResponse<User | null>> {
-        const role = this.configService.get("USER_ROLE");
-        return await this.userService.create(form, role)
+        const role = this.configService.get("CLIENT_ROLE");
+        return await this.userService.createLocalUser(form, role)
     }
 
     async addAdmin(form: any): Promise<ServiceResponse<User | null>> {
         const role = this.configService.get("ADMIN_ROLE");
-        return await this.userService.create(form, role)
+        return await this.userService.createLocalUser(form, role)
     }
 
 
@@ -64,9 +64,14 @@ export class AuthService {
             return null;
         }
 
-        const verifPassword = await bcrypt.compare(pwd, getUser.data.password);
-        if (!verifPassword) {
-            return null;
+        if (getUser.data.password) {
+            const verifPassword = await bcrypt.compare(pwd, getUser.data.password);
+            if (!verifPassword) {
+                return null;
+            }
+        }
+        else{
+            return null
         }
 
         return (await this.userService.getUserById(getUser.data.id)).data;
@@ -76,7 +81,7 @@ export class AuthService {
     generateJwt(user: any) {
         return this.jwtService.sign({
             user_id: user.id,
-            user_role: user.role.id,
+            user_role: user.role,
         });
     }
 }

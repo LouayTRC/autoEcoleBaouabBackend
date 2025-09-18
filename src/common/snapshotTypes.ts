@@ -58,3 +58,21 @@ export class ServiceDetail {
 }
 
 export const ServiceDetailSchema = SchemaFactory.createForClass(ServiceDetail);
+
+
+
+@Schema({_id:false})
+export class AccountProvider{
+
+    @Prop({required:true,type:String})
+    provider:String
+
+    @Prop({required:true,type:String})
+    provider_id:String
+
+    @Prop({required:true,type:Boolean})
+    verified:Boolean
+
+}
+
+export const AccountProviderSchema=SchemaFactory.createForClass(AccountProvider)

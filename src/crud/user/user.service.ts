@@ -75,13 +75,13 @@ export class UserService {
     }
 
 
-    async create(form: any, role: string): Promise<ServiceResponse<User>> {
+    async createLocalUser(form: any, role: string): Promise<ServiceResponse<User>> {
 
         const { fullname, username, email, password, phone } = form
-   
+
 
         const verifUniqueErrors = await this.verifUniqueCredentials(form);
-        if (verifUniqueErrors.length > 0) {      
+        if (verifUniqueErrors.length > 0) {
             throw new ConflictException(verifUniqueErrors);
         }
 
@@ -109,6 +109,48 @@ export class UserService {
 
         } catch (error) {
             throw new InternalServerErrorException("Problème dans la création de votre compte !")
+        }
+    }
+
+    async createOrLinkOauthUser(form: any): Promise<ServiceResponse<UserDocument>> {
+        console.log("lena");
+        
+        const { provider, provider_id, provider_status, email, username, fullname } = form
+
+        const role = process.env.CLIENT_ROLE;
+
+        const getRole = await this.roleService.getRoleByName(role!);
+        if (!getRole.data) {
+            throw new NotFoundException("Ce role est introuvable !!")
+        }
+
+
+        const existingUser = await this.getUserByIdentifiant(email);
+        if (existingUser.data) {
+            const user = existingUser.data;
+            const exists = user.linkedAccounts.some(acc => acc.provider === provider);
+            if (!exists) {
+                user.linkedAccounts.push({ provider, provider_id, verified: provider_status });
+                await user.save();
+            }
+            return { message: "Utilisateur mis à jour avec succès", data: user };
+        }
+
+        console.log("rrr");
+        
+        const newUser = await this.userModel.create({
+            username,
+            email,
+            fullname,
+            role: getRole.data,
+            linkedAccounts: [{ provider, provider_id, verified: provider_status }],
+            password: null,
+            phone: null
+        });
+
+        return {
+            data: newUser,
+            message: 'Compte créé avec succès !'
         }
     }
 

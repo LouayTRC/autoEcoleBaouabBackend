@@ -8,6 +8,10 @@ import { loginSchema, registerSchema } from 'src/validation/requests/auth.valida
 import type { Response } from 'express';
 import { LocalStrategy } from 'src/strategies/local.strategy';
 import { LocalAuthGuard } from 'src/guards/local.auth.guard';
+import { GoogleAuthGuard } from 'src/guards/google.auth.guard';
+import { FacebookAuthGuard } from 'src/guards/facebook.auth.guard';
+import { AuthenticateMiddleware } from 'src/middlewares/authenticate.middleware';
+import { AuthenticateGuard } from 'src/guards/authenticate.guard';
 
 @Controller('auth')
 export class AuthController {
@@ -19,45 +23,11 @@ export class AuthController {
         return await this.authService.register(form)
     }
 
-
-    // @Post("login")
-    // async login(@Bod-y(new JoiValidationPipe(loginSchema)) form: any, @Res({ passthrough: true }) res: Response): Promise<ServiceResponse<any | null>> {
-    //     const result = await this.authService.login(form)
-
-    //     if (result.data) {
-    //         res.cookie("jwt", result.data.token, {
-    //             httpOnly: true, // inaccessible par JS
-    //             secure: false, // ! en HTTPS uniquement
-    //             sameSite: "lax", // CSRF protection
-    //             maxAge: 24 * 60 * 60 * 1000, // 1 jour
-    //             path: '/'
-    //         });
-
-
-    //         // Prod 
-    //         // res.cookie("jwt", token, {
-    //         //     httpOnly: true,              // toujours pour sécurité
-    //         //     secure: true,                // HTTPS obligatoire
-    //         //     sameSite: "strict",          // protection CSRF maximale
-    //         //     path: "/",                    // ou "/api" si tu veux limiter
-    //         //     maxAge: 24 * 60 * 60 * 1000, // 1 jour
-    //         //     domain: ".mon-domaine.com",   // si frontend et backend sur sous-domaines différents
-    //         // });
-    //     }
-
-    //     const user = await this.userService.getUserById(result.data.user.id);
-
-    //     return {
-    //         data: user.data,
-    //         message: result.message
-    //     };
-    // }
-
     @Post("login")
     @UseGuards(LocalAuthGuard)
     async login(@Req() req, @Res({ passthrough: true }) res: Response) {
         const token = this.authService.generateJwt(req.user);
-        
+
         res.cookie('jwt', token, {
             httpOnly: true,
             secure: false,          // en prod: true (HTTPS)
@@ -65,7 +35,7 @@ export class AuthController {
             maxAge: 24 * 60 * 60 * 1000,
             path: '/',
         });
-        
+
         return {
             data: req.user,
             message: "Login avec succès !"
@@ -85,5 +55,95 @@ export class AuthController {
     }
 
 
+    @Get("google")
+    @UseGuards(GoogleAuthGuard)
+    async googleLogin() { }
 
+
+    @Get("facebook")
+    @UseGuards(FacebookAuthGuard)
+    async facebookLogin() { }
+
+
+    @Get("facebook/callback")
+    @UseGuards(FacebookAuthGuard)
+    async facebookCallback(@Req() req, @Res() res) {
+        console.log("req", req.user);
+        const facebookUserResponse = req.user
+
+        const randomSuffix = Math.floor(100 + Math.random() * 900);
+        const username = (facebookUserResponse.name.givenName + facebookUserResponse.name.familyName + randomSuffix).toLowerCase();
+
+        const user = {
+            provider_id: facebookUserResponse.id,
+            provider: 'facebook',
+            provider_status: true,
+            email: facebookUserResponse.emails[0].value,
+            fullname: facebookUserResponse.name.givenName + " " + facebookUserResponse.name.familyName,
+            username,
+        }
+
+        const createdUser = await this.userService.createOrLinkOauthUser(user);
+
+        const token = this.authService.generateJwt(createdUser.data);
+
+        res.cookie('jwt', token, {
+            httpOnly: true,
+            secure: false,          // en prod: true (HTTPS)
+            sameSite: 'lax',        // prod cross-site: 'none' + secure:true
+            maxAge: 24 * 60 * 60 * 1000,
+            path: '/',
+        });
+
+        return res.redirect('http://localhost:4200');
+
+    }
+
+
+    @Get("google/callback")
+    @UseGuards(GoogleAuthGuard)
+    async googleCallback(@Req() req, @Res() res) {
+        const googleUserReponse = req.user
+
+        const randomSuffix = Math.floor(100 + Math.random() * 900);
+        const username = (googleUserReponse.name.givenName + googleUserReponse.name.familyName + randomSuffix).toLowerCase();
+
+        const user = {
+            provider_id: googleUserReponse.id,
+            provider: 'google',
+            provider_status: googleUserReponse.emails[0].verified,
+            email: googleUserReponse.emails[0].value,
+            fullname: googleUserReponse.name.givenName + " " + googleUserReponse.name.familyName,
+            username,
+        }
+
+        const createdUser = await this.userService.createOrLinkOauthUser(user);
+
+        const token = this.authService.generateJwt(createdUser.data);
+
+        res.cookie('jwt', token, {
+            httpOnly: true,
+            secure: false,          // en prod: true (HTTPS)
+            sameSite: 'lax',        // prod cross-site: 'none' + secure:true
+            maxAge: 24 * 60 * 60 * 1000,
+            path: '/',
+        });
+
+        console.log("ici");
+
+
+        return res.redirect('http://localhost:4200');
+
+    }
+
+
+
+    @Get("me")
+    @UseGuards(AuthenticateGuard)
+    async getConnectedUser(@Req() req): Promise<ServiceResponse<User | null>> {
+        const user_id = req.user_id;
+        const getUser = await this.userService.getUserById(user_id)
+
+        return getUser
+    }
 }

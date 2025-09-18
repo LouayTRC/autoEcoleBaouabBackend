@@ -58,23 +58,31 @@ export class CommandeController {
         return result!;
     }
 
-    // @Get("client")
-    // @RolesDecorator(Roles.user)
-    // async getClientCommands(@Req() req: Request): Promise<ServiceResponse<Commande[]>> {
-    //     const user_id = req["user_id"]
-    //     return await this.commandeService.getClientCommands(user_id);
-    // }
+    @Get("client")
+    @RolesDecorator(Roles.client)
+    async getClientCommands(@Req() req: Request): Promise<ServiceResponse<Commande[]>> {
+        const user_id = req["user_id"]
+        const relations=[
+            {
+                path:"packs",
+                childs:[
+                    {path:"pack"}
+                ]
+            }
+        ]
+        return await this.commandeService.getClientCommands(user_id,relations);
+    }
 
-    // @Get()
-    // async getAllCommands(): Promise<ServiceResponse<Commande[]>> {
-    //     const relations=[
-    //         {
-    //             path:"packs",
-    //             childs:[
-    //                 {path:"pack_id"}
-    //             ]
-    //         }
-    //     ]
-    //     return await this.commandeService.getAllCommands(relations);
-    // }
+    @Get()
+    async getAllCommands(): Promise<ServiceResponse<Commande[]>> {
+        const relations=[
+            {
+                path:"packs",
+                childs:[
+                    {path:"pack"}
+                ]
+            }
+        ]
+        return await this.commandeService.getAllCommands(relations);
+    }
 }

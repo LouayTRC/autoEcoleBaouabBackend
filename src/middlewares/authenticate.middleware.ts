@@ -8,7 +8,9 @@ export class AuthenticateMiddleware implements NestMiddleware {
     constructor(private readonly jwtService: JwtService) { }
 
     use(@Req() req: Request, res: any, next: (error?: any) => void) {
-        const token = req.cookies?.jwt; 
+        const token = req.cookies?.jwt;
+        console.log("token",token);
+         
         
         if (!token) {
             throw new UnauthorizedException('Token manquant ou invalide');
