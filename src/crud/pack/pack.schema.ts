@@ -1,7 +1,7 @@
 import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
 import { HydratedDocument, Types } from "mongoose";
 import { Permis } from "../permis/permis.schema";
-import { Services } from "../services/service.schema";
+import { Services } from "../services/services.schema";
 import { schemaOptions } from "src/common/types";
 import { boolean, required, string } from "joi";
 import { PermisSnapshot, PermisSnapshotSchema, ServiceDetail, ServiceDetailSchema } from "src/common/snapshotTypes";

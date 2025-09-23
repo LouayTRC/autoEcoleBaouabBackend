@@ -2,7 +2,7 @@ import { forwardRef, Module } from '@nestjs/common';
 import { ServicesService } from './services.service';
 import { ServicesController } from './services.controller';
 import { MongooseModule } from '@nestjs/mongoose';
-import { Services, ServicesSchema } from './service.schema';
+import { Services, ServicesSchema } from './services.schema';
 import { TarifModule } from '../tarif/tarif.module';
 import { FileUploadModule } from '../fileUpload/fileUpload.module';
 import { PermisModule } from '../permis/permis.module';

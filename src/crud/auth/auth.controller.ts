@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Post, Req, Res, UseGuards, UsePipes } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Put, Req, Res, UseGuards, UsePipes } from '@nestjs/common';
 import { ServiceResponse } from 'src/common/types';
 import { UserService } from 'src/crud/user/user.service';
 import { AuthService } from './auth.service';
@@ -12,6 +12,7 @@ import { GoogleAuthGuard } from 'src/guards/google.auth.guard';
 import { FacebookAuthGuard } from 'src/guards/facebook.auth.guard';
 import { AuthenticateMiddleware } from 'src/middlewares/authenticate.middleware';
 import { AuthenticateGuard } from 'src/guards/authenticate.guard';
+import { string } from 'joi';
 
 @Controller('auth')
 export class AuthController {
@@ -68,7 +69,6 @@ export class AuthController {
     @Get("facebook/callback")
     @UseGuards(FacebookAuthGuard)
     async facebookCallback(@Req() req, @Res() res) {
-        console.log("req", req.user);
         const facebookUserResponse = req.user
 
         const randomSuffix = Math.floor(100 + Math.random() * 900);
@@ -95,7 +95,7 @@ export class AuthController {
             path: '/',
         });
 
-        return res.redirect('http://localhost:4200');
+        return res.redirect(process.env.FRONTEND_URL);
 
     }
 
@@ -129,10 +129,7 @@ export class AuthController {
             path: '/',
         });
 
-        console.log("ici");
-
-
-        return res.redirect('http://localhost:4200');
+        return res.redirect(process.env.FRONTEND_URL);
 
     }
 
@@ -145,5 +142,17 @@ export class AuthController {
         const getUser = await this.userService.getUserById(user_id)
 
         return getUser
+    }
+
+
+    @Get("forget/:identifiant")
+    async forgetPwd(@Param("identifiant") identifiant:string):Promise<ServiceResponse<null>>{
+        return await this.authService.forgetPassword(identifiant)
+    }
+
+
+    @Put("reset")
+    async resetPwd(@Body() form:any):Promise<ServiceResponse<any>>{
+        return await this.authService.resetPwd(form)
     }
 }

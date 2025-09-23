@@ -1,9 +1,9 @@
 import { Module } from '@nestjs/common';
-import { CommandeService } from './commande.service';
-import { CommandeController } from './commande.controller';
+import { OrderService } from './order.service';
+import { OrderController } from './order.controller';
 import { Mongoose } from 'mongoose';
 import { MongooseModule } from '@nestjs/mongoose';
-import { Commande, CommandeSchema } from './commande.schema';
+import { Order, OrderSchema } from './order.schema';
 import { UserModule } from '../user/user.module';
 
 import { RoleModule } from '../role/role.module';
@@ -12,13 +12,13 @@ import { EmailModule } from '../email/email.module';
 
 @Module({
   imports:[
-    MongooseModule.forFeature([{name:Commande.name,schema:CommandeSchema}]),
+    MongooseModule.forFeature([{name:Order.name,schema:OrderSchema}]),
     UserModule,
     RoleModule,
     PackModule,
     EmailModule
   ],
-  providers: [CommandeService],
-  controllers: [CommandeController]
+  providers: [OrderService],
+  controllers: [OrderController]
 })
-export class CommandeModule {}
+export class OrderModule {}

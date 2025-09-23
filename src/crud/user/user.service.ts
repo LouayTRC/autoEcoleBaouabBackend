@@ -2,8 +2,8 @@ import { BadRequestException, ConflictException, Injectable, InternalServerError
 import { InjectModel } from '@nestjs/mongoose';
 import { User, UserDocument } from './user.schema';
 import { RoleService } from 'src/crud/role/role.service';
-import { ServiceResponse } from 'src/common/types';
-import { Model } from 'mongoose';
+import { buildPopulateConfig, Roles, ServiceResponse } from 'src/common/types';
+import { ClientSession, Model, Types } from 'mongoose';
 import { ConfigService } from '@nestjs/config';
 import bcrypt from 'node_modules/bcryptjs';
 
@@ -113,8 +113,7 @@ export class UserService {
     }
 
     async createOrLinkOauthUser(form: any): Promise<ServiceResponse<UserDocument>> {
-        console.log("lena");
-        
+
         const { provider, provider_id, provider_status, email, username, fullname } = form
 
         const role = process.env.CLIENT_ROLE;
@@ -136,8 +135,7 @@ export class UserService {
             return { message: "Utilisateur mis à jour avec succès", data: user };
         }
 
-        console.log("rrr");
-        
+
         const newUser = await this.userModel.create({
             username,
             email,
@@ -154,20 +152,120 @@ export class UserService {
         }
     }
 
-    async getAllUsers(): Promise<ServiceResponse<User[]>> {
-        return this.userModel.find().exec()
-            .then(users => ({
-                data: users || [],
-            }))
-            .catch(error => {
-                throw new InternalServerErrorException("Problème dans la récupération des utilisateurs !")
-            });
+    async updateUser(user_id: string, userData: any, session?: ClientSession): Promise<ServiceResponse<User>> {
+
+
+        const getUser = await this.getUserById(user_id, [], session);
+        if (!getUser.data) {
+            throw new NotFoundException("Cet utilisateur est introuvable !")
+        }
+
+        let payloadData: any = {}
+
+        if (userData.username || userData.email) {
+            const verifCredentials = await this.verifUniqueCredentials(userData);
+            if (verifCredentials.length > 0) {
+                throw new ConflictException(verifCredentials);
+            }
+
+            if (userData.email) {
+                payloadData.email = userData.email;
+
+            }
+
+            if (userData.username) {
+                payloadData.username = userData.username;
+            }
+        }
+
+
+        if (userData.password) {
+            
+            const hashSalt = process.env.HASH_SALT
+            const password = await bcrypt.hash(userData.password, Number(hashSalt))
+            payloadData.password = password;
+        }
+
+        if (userData.fullname) {
+            payloadData.fullname = userData.fullname;
+        }
+
+        if (userData.phone) {
+            payloadData.phone = userData.phone;
+        }
+
+        payloadData.resetToken = userData.resetToken || null;
+        payloadData.resetTokenExpiration = userData.resetTokenExpiration || null;
+
+
+
+
+        const updatedUser = await this.userModel.findOneAndUpdate(
+            { _id: new Types.ObjectId(user_id) },
+            payloadData,
+            { new: true }
+        ).exec();
+
+        if (!updatedUser) {
+            throw new NotFoundException("Utilisateur introuvable après mis à jours!")
+        }
+
+
+        return {
+            data: updatedUser,
+            message: "Utilisateur mis à jour avec succès!"
+        }
+
     }
 
-    async getUserById(id: string): Promise<ServiceResponse<UserDocument | null>> {
+    async getAllUsers(params: any): Promise<ServiceResponse<any>> {
+        const { search, page, limit } = params;
+
+        const getAdminRole = await this.roleService.getRoleByName(Roles.admin);
+        if (!getAdminRole.data) {
+            throw new NotFoundException("Role admin est introuvable !")
+        }
+
+        const filter: any = {
+            role: { $ne: getAdminRole.data._id }
+        }
+        if (search) {
+            const regex = new RegExp(search, "i");
+            filter.$or = [
+                { fullname: regex },
+                { email: regex },
+                { phone: regex },
+                { username: regex },
+            ];
+        }
+
+        const skip = (page - 1) * limit;
+
+        const data = await this.userModel.find(filter).skip(skip).limit(limit).exec();
+        const total = await this.userModel.countDocuments(filter).exec();
+
+        return {
+            data: {
+                users: data,
+                total,
+                page,
+                limit
+            }
+        }
+        // return this.userModel.find().exec();
+        //     .then(users => ({
+        //         data: users || [],
+        //     }))
+        //     .catch(error => {
+        //         throw new InternalServerErrorException("Problème dans la récupération des utilisateurs !")
+        //     });
+    }
+
+    async getUserById(id: string, relations?: any[], session?: ClientSession): Promise<ServiceResponse<UserDocument | null>> {
+        const populateConfig = relations ? buildPopulateConfig(relations) : []
         const user = await this.userModel.findOne({
             _id: id
-        }).populate('role').exec();
+        }).populate('role').populate(populateConfig).session(session ?? null).exec();
 
         return {
             data: user
@@ -180,7 +278,7 @@ export class UserService {
                 { username: identifiant },
                 { email: identifiant },
             ]
-        }).select('+password').populate('role').exec()
+        }).select(['+password', "+resetToken", "+resetTokenExpiration"]).populate('role').exec()
 
         return {
             data: user

@@ -1,7 +1,7 @@
 import { ConflictException, forwardRef, Inject, Injectable, InternalServerErrorException, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { ServiceDocument, Services } from './service.schema';
-import { ClientSession, Model } from 'mongoose';
+import { ServiceDocument, Services } from './services.schema';
+import { ClientSession, Model, Types } from 'mongoose';
 import { ServiceResponse } from 'src/common/types';
 import { TarifService } from '../tarif/tarif.service';
 import path from 'path';
@@ -23,7 +23,6 @@ export class ServicesService {
 
     async createService(form: any, session?: ClientSession): Promise<ServiceResponse<any>> {
         const { service, tarifs } = form;
-        console.log("form", form);
 
         // Si session n'est pas fournie, on en crée une
         const ownSession = !session;
@@ -52,11 +51,9 @@ export class ServicesService {
             }], { session: currentSession });
 
             createdService = createdService[0];
-            console.log("vv", createdService);
 
-            // 2. Créer les tarifs
-            tarifsResult = await this.tarifService.addTarifs(createdService.id, tarifs, currentSession);
-            console.log("dd", tarifsResult.data);
+
+            tarifsResult = await this.tarifService.addTarifsForServices(createdService.id, tarifs, currentSession);
 
             if (ownSession) {
                 await currentSession.commitTransaction();
@@ -72,8 +69,6 @@ export class ServicesService {
             };
 
         } catch (error) {
-            console.log("erro", error);
-
             if (ownSession) {
                 await currentSession.abortTransaction();
             }
@@ -93,7 +88,7 @@ export class ServicesService {
 
 
     async getAllServices(): Promise<ServiceResponse<Services[]>> {
-        let services = await this.servicesModel.find()
+        let services = await this.servicesModel.find({deletedAt:null})
             .populate({
                 path: "tarifs",
                 populate: {
@@ -113,7 +108,7 @@ export class ServicesService {
     }
 
     async getServiceById(id: string, session?: ClientSession): Promise<ServiceResponse<ServiceDocument | null>> {
-        const service = await this.servicesModel.findById(id).session(session ?? null).exec();
+        const service = await this.servicesModel.findById(new Types.ObjectId(id)).session(session ?? null).exec();
         return {
             data: service
         }
@@ -123,7 +118,10 @@ export class ServicesService {
         const service = await this.servicesModel.findOne({ name })
             .populate({
                 path: "tarifs",
-                populate: { path: "service" }, 
+                populate: [
+                    { path: "service" },
+                    { path: "permis" },
+                ],
             })
             .session(session ?? null)
             .exec();
@@ -189,7 +187,7 @@ export class ServicesService {
             if (error instanceof ConflictException || error instanceof NotFoundException) {
                 throw error;
             }
-            console.log("error", error);
+
             throw new InternalServerErrorException("Erreur lors de la mise à jour du service");
         }
     }
@@ -220,17 +218,17 @@ export class ServicesService {
     }
 
 
-    async getTarifsWithServicesByPermis(permis_id:string):Promise<ServiceResponse<Tarif[]>>{
-        const relations=[
+    async getTarifsWithServicesByPermis(permis_id: string): Promise<ServiceResponse<Tarif[]>> {
+        const relations = [
             {
-                path:"service"
+                path: "service"
             }
         ]
 
-        const tarifs=await this.tarifService.getTarifsByPermis(permis_id,relations)
+        const tarifs = await this.tarifService.getTarifsByPermis(permis_id, relations)
 
         return {
-            data:tarifs.data
+            data: tarifs.data
         }
     }
 

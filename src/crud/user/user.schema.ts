@@ -3,6 +3,7 @@ import { HydratedDocument, Types } from "mongoose";
 import { AccountProvider, AccountProviderSchema } from "src/common/snapshotTypes";
 import { Roles, schemaOptions } from "src/common/types";
 import { Role } from "src/crud/role/role.schema";
+import { Order } from "../order/order.schema";
 
 export type UserDocument = HydratedDocument<User>;
 
@@ -31,8 +32,22 @@ export class User{
     @Prop({required:false,select:false})
     password?:string
 
+    @Prop({required:false,select:false})
+    resetToken?:string
+
+    @Prop({required:false,select:false})
+    resetTokenExpiration?:Date
+
 }
 
 export const UserSchema=SchemaFactory.createForClass(User)
 
+UserSchema.virtual("orders",{
+    localField:"_id",
+    foreignField:"client",
+    ref:"Order",
+    justOne:false
+})
 
+UserSchema.set("toJSON", { virtuals: true });
+UserSchema.set("toObject", { virtuals: true });

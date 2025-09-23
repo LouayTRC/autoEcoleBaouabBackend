@@ -1,7 +1,7 @@
 import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
 import { Types } from "mongoose";
 import { Permis } from "src/crud/permis/permis.schema";
-import { Services } from "src/crud/services/service.schema";
+import { Services } from "src/crud/services/services.schema";
 
 import { HydratedDocument } from "mongoose";
 

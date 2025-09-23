@@ -29,7 +29,12 @@ export const schemaOptions: SchemaOptions = {
 
 export function buildPopulateConfig(relations: any[]): any[] {
   return relations.map(rel => {
-    let populateConfig: any = { path: rel.path };
+    const populateConfig: any = { path: rel.path };
+
+    // copier options si présentes
+    if (rel.options) {
+      populateConfig.options = rel.options;
+    }
 
     if (rel.childs && rel.childs.length > 0) {
       populateConfig.populate = buildPopulateConfig(rel.childs);

@@ -1,18 +1,18 @@
-import { Commande } from "src/crud/commande/commande.schema";
+import { Order } from "src/crud/order/order.schema";
 import { ServiceDetail } from "./snapshotTypes";
 
 export type EmailObject = {
-    subject: string;
-    html: string;
-    to?: string;
-    from?: string
+  subject: string;
+  html: string;
+  to?: string;
+  from?: string
 }
 
 export const createClientNewCommandeMail = (
-  commande: Commande,
+  order: Order,
   email: string
 ): EmailObject => {
-  const { packs, price, created_at, status } = commande;
+  const { packs, price, created_at, status } = order;
 
   // Traduction du statut
   let statusText = "";
@@ -39,8 +39,8 @@ export const createClientNewCommandeMail = (
 
       <h3 style="margin-top:25px; color:#333;">📦 Détails des packs :</h3>
       ${packs
-        .map(
-          (p) => `
+      .map(
+        (p) => `
         <div style="background:#fff; padding:15px; margin-bottom:15px; border:1px solid #ddd; border-radius:6px;">
           <p style="margin:0; font-size:16px;">
             <strong>Nom du pack :</strong> ${p.name}
@@ -63,8 +63,8 @@ export const createClientNewCommandeMail = (
             </thead>
             <tbody>
               ${p.services
-                ?.map(
-                  (s) => `
+            ?.map(
+              (s) => `
                 <tr>
                   <td style="padding:6px;">${s.serviceName}</td>
                   <td style="text-align:center; padding:6px;">${s.qte}</td>
@@ -72,14 +72,14 @@ export const createClientNewCommandeMail = (
                   <td style="text-align:right; padding:6px;"><strong>${s.total} DT</strong></td>
                 </tr>
               `
-                )
-                .join("")}
+            )
+            .join("")}
             </tbody>
           </table>
         </div>
       `
-        )
-        .join("")}
+      )
+      .join("")}
 
       <h3 style="color:#E91E63; text-align:right; margin-top:20px;">
         💰 Montant total de la commande : ${price} DT
@@ -100,12 +100,12 @@ export const createClientNewCommandeMail = (
 
 
 export const createOwnerNewCommandeMail = (
-  commande: Commande,
+  commande: Order,
   clientEmail: string
 ): EmailObject => {
   const { packs, price, created_at, status } = commande;
 
-  
+
   let statusText = "";
   if (status === 0) statusText = "⏳ En attente de paiement";
   else if (status === 2) statusText = "✅ Payée avec succès";
@@ -134,8 +134,8 @@ export const createOwnerNewCommandeMail = (
 
       <h3 style="margin-top:25px; color:#333;">📦 Détails des packs commandés :</h3>
       ${packs
-        .map(
-          (p) => `
+      .map(
+        (p) => `
         <div style="background:#fff; padding:15px; margin-bottom:15px; border:1px solid #ddd; border-radius:6px;">
           <p style="margin:0; font-size:16px;">
             <strong>Nom du pack :</strong> ${p.name}
@@ -158,8 +158,8 @@ export const createOwnerNewCommandeMail = (
             </thead>
             <tbody>
               ${p.services
-                ?.map(
-                  (s) => `
+            ?.map(
+              (s) => `
                 <tr>
                   <td style="padding:6px;">${s.serviceName}</td>
                   <td style="text-align:center; padding:6px;">${s.qte}</td>
@@ -167,14 +167,14 @@ export const createOwnerNewCommandeMail = (
                   <td style="text-align:right; padding:6px;"><strong>${s.total} DT</strong></td>
                 </tr>
               `
-                )
-                .join("")}
+            )
+            .join("")}
             </tbody>
           </table>
         </div>
       `
-        )
-        .join("")}
+      )
+      .join("")}
 
       <h3 style="color:#E91E63; text-align:right; margin-top:20px;">
         💰 Montant total de la commande : ${price} DT
@@ -190,3 +190,85 @@ export const createOwnerNewCommandeMail = (
     html,
   };
 };
+
+
+
+export const createForgetPwdEmail = (email: string, token: string): EmailObject => {
+  const url = `${process.env.FRONTEND_API}/client/reset-password/${token}`;
+
+  const subject = "Réinitialisation de votre mot de passe";
+
+  const html = `
+  <div style="font-family: Arial, sans-serif; background-color: #f4f4f4; padding: 20px;">
+    <div style="max-width: 600px; margin: auto; background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 0 10px rgba(0,0,0,0.1);">
+      
+      <div style="background-color: #0d6efd; padding: 20px; color: #ffffff; text-align: center;">
+        <h1 style="margin: 0; font-size: 24px;">Réinitialisation du mot de passe</h1>
+      </div>
+
+      <div style="padding: 30px; color: #333333; font-size: 16px; line-height: 1.5;">
+        <p>Bonjour,</p>
+        <p>Vous avez demandé à réinitialiser votre mot de passe pour votre compte associé à <strong>${email}</strong>.</p>
+        <p>Cliquez sur le bouton ci-dessous pour créer un nouveau mot de passe :</p>
+
+        <div style="text-align: center; margin: 30px 0;">
+          <a href="${url}" 
+             style="background-color: #0d6efd; color: #ffffff; text-decoration: none; padding: 12px 25px; border-radius: 5px; font-weight: bold; display: inline-block;">
+            Réinitialiser mon mot de passe
+          </a>
+        </div>
+
+        <p>Si vous n'avez pas demandé cette réinitialisation, ignorez simplement cet email.</p>
+        <p>Merci,<br>L'équipe AutoEcole</p>
+      </div>
+
+      <div style="background-color: #f4f4f4; padding: 15px; text-align: center; font-size: 12px; color: #777777;">
+        &copy; ${new Date().getFullYear()} AutoEcole. Tous droits réservés.
+      </div>
+    </div>
+  </div>
+  `;
+  return {
+    html,
+    subject,
+    to: email
+  }
+}
+
+
+
+export const createResetPasswordSuccessEmail = (email: string): EmailObject => {
+
+  const subject = "Mot de passe réinitialisé avec succès";
+
+  const html = `
+  <div style="font-family: Arial, sans-serif; background-color: #f4f4f4; padding: 20px;">
+    <div style="max-width: 600px; margin: auto; background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 0 10px rgba(0,0,0,0.1);">
+      
+      <div style="background-color: #28a745; padding: 20px; color: #ffffff; text-align: center;">
+        <h1 style="margin: 0; font-size: 24px;">Mot de passe réinitialisé</h1>
+      </div>
+
+      <div style="padding: 30px; color: #333333; font-size: 16px; line-height: 1.5;">
+        <p>Bonjour,</p>
+        <p>Le mot de passe associé à votre compte <strong>${email}</strong> a été réinitialisé avec succès.</p>
+        <p>Vous pouvez maintenant vous connecter avec votre nouveau mot de passe.</p>
+
+        <p>Si vous n'avez pas effectué cette modification, veuillez contacter notre support immédiatement.</p>
+        
+        <p>Merci,<br>L'équipe AutoEcole</p>
+      </div>
+
+      <div style="background-color: #f4f4f4; padding: 15px; text-align: center; font-size: 12px; color: #777777;">
+        &copy; ${new Date().getFullYear()} AutoEcole. Tous droits réservés.
+      </div>
+    </div>
+  </div>
+  `;
+
+  return {
+    html,
+    subject,
+    to: email
+  }
+}

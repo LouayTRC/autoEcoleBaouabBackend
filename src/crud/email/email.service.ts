@@ -73,9 +73,6 @@ export class EmailService {
         html
       });
 
-      console.log("eee", fromEmail);
-      
-
       await this.emailModel.create({
         email:fromEmail,
         subject:subject,
@@ -85,12 +82,10 @@ export class EmailService {
 
       return {
         message: 'Email envoyé avec succès !',
-        data: info
+        data: {}
       };
 
     } catch (error) {
-      console.log("err", error);
-
       throw new InternalServerErrorException("Erreur lors de l'envoi de l'email !");
     }
   }

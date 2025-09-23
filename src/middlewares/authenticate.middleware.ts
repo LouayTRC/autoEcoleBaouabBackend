@@ -9,8 +9,7 @@ export class AuthenticateMiddleware implements NestMiddleware {
 
     use(@Req() req: Request, res: any, next: (error?: any) => void) {
         const token = req.cookies?.jwt;
-        console.log("token",token);
-         
+        
         
         if (!token) {
             throw new UnauthorizedException('Token manquant ou invalide');

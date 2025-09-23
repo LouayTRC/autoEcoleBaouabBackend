@@ -5,11 +5,11 @@ import { User } from "../user/user.schema";
 import { PackSnapshot, PackSnapshotSchema } from "../pack/pack.schema";
 
 
-export type CommandeDocument = HydratedDocument<Commande>;
+export type OrderDocument = HydratedDocument<Order>;
 
 
 @Schema(schemaOptions)
-export class Commande{
+export class Order{
 
     @Prop({type:[PackSnapshotSchema],default:[]})
     packs:PackSnapshot[]
@@ -23,8 +23,11 @@ export class Commande{
     @Prop({type:Types.ObjectId,ref:User.name,required:true})
     client:User
 
+    @Prop({type:String,required:true})
+    paymentMethod:String
+
     @Prop({type:Number,required:true})
     status:Number
 }
 
-export const CommandeSchema=SchemaFactory.createForClass(Commande)
+export const OrderSchema=SchemaFactory.createForClass(Order)

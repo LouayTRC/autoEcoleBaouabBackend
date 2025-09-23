@@ -1,6 +1,6 @@
 import { Body, Controller, Delete, Get, InternalServerErrorException, NotFoundException, Param, Post, Put, UploadedFile, UseInterceptors } from '@nestjs/common';
 import { ServiceResponse } from 'src/common/types';
-import { Services } from './service.schema';
+import { Services } from './services.schema';
 import { ServicesService } from './services.service';
 import { ImageUpload } from 'src/common/decorators';
 import { FileUploadService } from '../fileUpload/fileUpload.service';
@@ -66,7 +66,7 @@ export class ServicesController {
             return result!;
 
         } catch (error) {
-            console.log("Erreur addService:", error);
+          
             throw new InternalServerErrorException(
                 `Erreur lors de l'ajout du service: ${error.message}`
             );
@@ -85,10 +85,9 @@ export class ServicesController {
         @Body('data') data: any,
         @UploadedFile() file?: Express.Multer.File
     ): Promise<ServiceResponse<any>> {
-        console.log("data",data);
+
         const form=JSON.parse(data)
-        console.log("form",form);
-        
+
         
 
         const session = await this.servicesModel.db.startSession();
@@ -127,7 +126,6 @@ export class ServicesController {
 
             return result!;
         } catch (error: any) {
-            console.log("Erreur updateService:", error);
             throw new InternalServerErrorException(`Erreur lors de la mise à jour du service: ${error.message}`);
         } finally {
             await session.endSession();

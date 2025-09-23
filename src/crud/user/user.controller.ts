@@ -1,4 +1,4 @@
-import { Controller, Get, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Put, UseGuards } from '@nestjs/common';
 import { UserService } from './user.service';
 import { Roles, ServiceResponse } from 'src/common/types';
 import { User } from './user.schema';
@@ -11,12 +11,30 @@ export class UserController {
 
     constructor(private userService:UserService){}
 
-    @Get()
+    @Post()
     // @RolesDecorator(Roles.admin)
-    async getAllUsers():Promise<ServiceResponse<User[]>>{
-        return await this.userService.getAllUsers()
+    async getAllUsers(@Body() params:any):Promise<ServiceResponse<User[]>>{
+        return await this.userService.getAllUsers(params)
     }
 
+
+    @Get(":id")
+    // @RolesDecorator(Roles.admin)
+    async getUserById(@Param("id") id:string):Promise<ServiceResponse<User | null>>{
+        const relations=[
+            {
+                path:"orders",
+            }
+        ]
+        
+        return await this.userService.getUserById(id,relations)
+    }
+
+
+    @Put('status')
+    async updateUserStatus(@Body() form:any):Promise<ServiceResponse<User>>{
+        return await this.userService.updateUser(form.id,form)
+    }
 
     
 }

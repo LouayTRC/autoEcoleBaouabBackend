@@ -57,13 +57,11 @@ export const registerSchema = Joi.object({
 
 export const loginSchema = Joi.object({
   identifiant: Joi.string()
-    .alphanum()
     .min(3)
     .max(30)
     .required()
     .messages({
       'string.base': "L'identifiant doit être une chaîne de caractères",
-      'string.alphanum': "L'identifiant doit contenir seulement des lettres et chiffres",
       'string.min': "L'identifiant doit contenir au moins 3 caractères",
       'string.max': "L'identifiant ne peut pas dépasser 30 caractères",
       'any.required': "L'identifiant est obligatoire",

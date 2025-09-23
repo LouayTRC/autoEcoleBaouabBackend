@@ -10,9 +10,11 @@ import { LocalStrategy } from 'src/strategies/local.strategy';
 import { LoginValidationMiddleware } from 'src/middlewares/loginValidation.middleware';
 import { GoogleStrategy } from 'src/strategies/google.strategy';
 import { FacebookStrategy } from 'src/strategies/facebook.strategy';
+import { EmailModule } from '../email/email.module';
 
 @Module({
     imports: [
+        EmailModule,
         UserModule,
         RoleModule,
         PassportModule.register({ session: false }),

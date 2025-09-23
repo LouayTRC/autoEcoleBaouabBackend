@@ -1,4 +1,4 @@
-import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
+import { MiddlewareConsumer, Module, NestModule, RequestMethod } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { MongooseModule } from '@nestjs/mongoose';
 import { envSchema } from './validation/env.schema';
@@ -9,7 +9,7 @@ import { AuthModule } from './crud/auth/auth.module';
 import { RoleModule } from './crud/role/role.module';
 import { UserModule } from './crud/user/user.module';
 import { ServicesModule } from './crud/services/services.module';
-import { CommandeModule } from './crud/commande/commande.module';
+import { OrderModule } from './crud/order/order.module';
 import { AuthenticateMiddleware } from './middlewares/authenticate.middleware';
 import { FileUploadModule } from './crud/fileUpload/fileUpload.module';
 import { TarifModule } from './crud/tarif/tarif.module';
@@ -21,14 +21,14 @@ import { EmailModule } from './crud/email/email.module';
 @Module({
   imports: [
     ConfigModule.forRoot({
-      isGlobal:true,
-      validationSchema:envSchema
+      isGlobal: true,
+      validationSchema: envSchema
     }),
     MongooseModule.forRootAsync({
-      imports:[ConfigModule],
-      inject:[ConfigService],
-      useFactory: async(configService:ConfigService)=>({
-        uri:configService.get<string>('MONGO_URI')
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: async (configService: ConfigService) => ({
+        uri: configService.get<string>('MONGO_URI')
       })
     }),
     PermisModule,
@@ -36,7 +36,7 @@ import { EmailModule } from './crud/email/email.module';
     RoleModule,
     UserModule,
     ServicesModule,
-    CommandeModule,
+    OrderModule,
     FileUploadModule,
     TarifModule,
     PackModule,
@@ -45,14 +45,16 @@ import { EmailModule } from './crud/email/email.module';
   controllers: [PermisController],
   providers: [],
 })
-export class AppModule implements NestModule{
+export class AppModule implements NestModule {
 
 
   configure(consumer: MiddlewareConsumer) {
     consumer
       .apply(AuthenticateMiddleware)
-      .exclude('auth/*')
+      .exclude({ path: 'auth/(.*)', method: RequestMethod.ALL })
+      .exclude({ path: 'permis', method: RequestMethod.GET })
+      .exclude({ path: 'pack/(.*)', method: RequestMethod.GET })
       .forRoutes('*')
   }
-  
+
 }

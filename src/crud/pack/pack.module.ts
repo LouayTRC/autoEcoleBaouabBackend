@@ -5,12 +5,14 @@ import { PackService } from './pack.service';
 import { PermisModule } from '../permis/permis.module';
 import { PackController } from './pack.controller';
 import { ServicesModule } from '../services/services.module';
+import { FileUploadModule } from '../fileUpload/fileUpload.module';
 
 @Module({
     imports: [
         MongooseModule.forFeature([{ name: Pack.name, schema: PackSchema }]),
         PermisModule,
-        ServicesModule
+        ServicesModule,
+        FileUploadModule
     ],
     providers: [PackService],
     exports: [PackService],

@@ -21,7 +21,7 @@ export class EmailController {
 
     @Put()
     async updateContactUsEmail(@Body() form:any):Promise<ServiceResponse<any>>{
-        const {email_id,status}=form
-        return await this.emailService.updateContactUsEmail(email_id,status);
+        const {id,status}=form
+        return await this.emailService.updateContactUsEmail(id,status);
     }
 }

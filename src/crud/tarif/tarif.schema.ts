@@ -2,7 +2,7 @@ import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
 import { HydratedDocument, Types } from "mongoose";
 import { schemaOptions } from "src/common/types";
 import { Permis } from "../permis/permis.schema";
-import { Services } from "../services/service.schema";
+import { Services } from "../services/services.schema";
 
 export type TarifDocument = HydratedDocument<Tarif>;
 
