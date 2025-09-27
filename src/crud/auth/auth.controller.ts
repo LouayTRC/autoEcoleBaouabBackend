@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Post, Put, Req, Res, UseGuards, UsePipes } from '@nestjs/common';
+import { Body, Controller, ForbiddenException, Get, NotFoundException, Param, Post, Put, Req, Res, UseGuards, UsePipes } from '@nestjs/common';
 import { ServiceResponse } from 'src/common/types';
 import { UserService } from 'src/crud/user/user.service';
 import { AuthService } from './auth.service';
@@ -12,47 +12,74 @@ import { GoogleAuthGuard } from 'src/guards/google.auth.guard';
 import { FacebookAuthGuard } from 'src/guards/facebook.auth.guard';
 import { AuthenticateMiddleware } from 'src/middlewares/authenticate.middleware';
 import { AuthenticateGuard } from 'src/guards/authenticate.guard';
-import { string } from 'joi';
+import bcrypt from 'node_modules/bcryptjs';
+import { UAParser } from 'ua-parser-js';
+import { JwtService } from '@nestjs/jwt';
+
+
 
 @Controller('auth')
 export class AuthController {
 
-    constructor(private authService: AuthService, private userService: UserService) { }
+    constructor(private authService: AuthService, private userService: UserService, private jwtService: JwtService) { }
 
     @Post("signup")
     async register(@Body(new JoiValidationPipe(registerSchema)) form: any): Promise<ServiceResponse<User | null>> {
         return await this.authService.register(form)
     }
 
-    @Post("login")
+    @Post('login')
     @UseGuards(LocalAuthGuard)
     async login(@Req() req, @Res({ passthrough: true }) res: Response) {
-        const token = this.authService.generateJwt(req.user);
+        const { accessToken, refreshToken, jti } = this.authService.generateTokens(req.user);
 
-        res.cookie('jwt', token, {
+        try {
+            const decoded = this.jwtService.decode(refreshToken);
+        } catch (e) {
+            console.log('🔍 LOGIN DEBUG - Cannot decode token:', e.message);
+        }
+
+        const userAgent = req.headers['user-agent'] || '';
+        const parser = new UAParser(userAgent);
+        const device = parser.getDevice().model || parser.getBrowser().name || 'Unknown';
+
+
+        const tokenHash = await bcrypt.hash(refreshToken, Number(process.env.HASH_SALT!));
+
+        
+        await this.userService.addRefreshToken(req.user.id, {
+            jti,
+            tokenHash,
+            device,
+            createdAt: new Date(),
+            expiresAt: new Date(Date.now() + 2 * 60 * 1000), // 7 jours
+        });
+
+        // 4️⃣ Envoyer les cookies
+        res.cookie('accessToken', accessToken, {
             httpOnly: true,
-            secure: false,          // en prod: true (HTTPS)
-            sameSite: 'lax',        // prod cross-site: 'none' + secure:true
-            maxAge: 24 * 60 * 60 * 1000,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+            maxAge: 30 * 1000, // 1h
             path: '/',
         });
 
-        return {
-            data: req.user,
-            message: "Login avec succès !"
-        }
+        res.cookie('refreshToken', refreshToken, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+            maxAge: 2 * 60 * 1000, // 7j
+            path: '/',
+        });
 
+        return { data: req.user, message: 'Login avec succès !' };
     }
 
+
     @Post('logout')
-    logout(@Res({ passthrough: true }) res: Response) {
-        res.clearCookie('jwt', {
-            httpOnly: true,
-            secure: false,   // mettre true en prod si HTTPS
-            sameSite: 'lax',
-            path: '/'        // doit correspondre au path utilisé à la création
-        });
-        return { message: 'Déconnecté avec succès' };
+    async logout(@Req() req, @Res({ passthrough: true }) res: Response) {
+
+        return await this.authService.logout(req, res)
     }
 
 
@@ -85,17 +112,42 @@ export class AuthController {
 
         const createdUser = await this.userService.createOrLinkOauthUser(user);
 
-        const token = this.authService.generateJwt(createdUser.data);
+        const { accessToken, refreshToken,jti } = this.authService.generateTokens(createdUser.data);
 
-        res.cookie('jwt', token, {
+
+        const userAgent = req.headers['user-agent'] || '';
+        const parser = new UAParser(userAgent);
+        const device = parser.getDevice().model || parser.getBrowser().name || 'Unknown';
+
+        // 2️⃣ Hasher le refresh token
+        const tokenHash = await bcrypt.hash(refreshToken, 10);
+
+        // 3️⃣ Ajouter dans le tableau refreshTokens
+        await this.userService.addRefreshToken(createdUser.data.id, {
+            jti,
+            tokenHash,
+            device,
+            createdAt: new Date(),
+            expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 jours
+        });
+
+        res.cookie('accessToken', accessToken, {
             httpOnly: true,
-            secure: false,          // en prod: true (HTTPS)
-            sameSite: 'lax',        // prod cross-site: 'none' + secure:true
-            maxAge: 24 * 60 * 60 * 1000,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+            maxAge: 60 * 60 * 1000, // 15m
             path: '/',
         });
 
-        return res.redirect(process.env.FRONTEND_URL);
+        res.cookie('refreshToken', refreshToken, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+            maxAge: 7 * 24 * 60 * 60 * 1000, // 7d
+            path: '/',
+        });
+
+        return res.redirect(process.env.FRONTEND_API);
 
     }
 
@@ -119,40 +171,102 @@ export class AuthController {
 
         const createdUser = await this.userService.createOrLinkOauthUser(user);
 
-        const token = this.authService.generateJwt(createdUser.data);
+        const { accessToken, refreshToken, jti } = this.authService.generateTokens(createdUser.data);
 
-        res.cookie('jwt', token, {
+
+        const userAgent = req.headers['user-agent'] || '';
+        const parser = new UAParser(userAgent);
+        const device = parser.getDevice().model || parser.getBrowser().name || 'Unknown';
+
+        // 2️⃣ Hasher le refresh token
+        const tokenHash = await bcrypt.hash(refreshToken, 10);
+
+        // 3️⃣ Ajouter dans le tableau refreshTokens
+        await this.userService.addRefreshToken(createdUser.data.id, {
+            jti,
+            tokenHash,
+            device,
+            createdAt: new Date(),
+            expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 jours
+        });
+
+
+        res.cookie('accessToken', accessToken, {
             httpOnly: true,
-            secure: false,          // en prod: true (HTTPS)
-            sameSite: 'lax',        // prod cross-site: 'none' + secure:true
-            maxAge: 24 * 60 * 60 * 1000,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+            maxAge: 60 * 60 * 1000, // 15m
             path: '/',
         });
 
-        return res.redirect(process.env.FRONTEND_URL);
+        res.cookie('refreshToken', refreshToken, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+            maxAge: 7 * 24 * 60 * 60 * 1000, // 7d
+            path: '/',
+        });
+
+        return res.redirect(process.env.FRONTEND_API);
 
     }
 
 
 
     @Get("me")
-    @UseGuards(AuthenticateGuard)
     async getConnectedUser(@Req() req): Promise<ServiceResponse<User | null>> {
-        const user_id = req.user_id;
-        const getUser = await this.userService.getUserById(user_id)
-
-        return getUser
+        return await this.authService.getConnectedUser(req);
     }
 
 
+
     @Get("forget/:identifiant")
-    async forgetPwd(@Param("identifiant") identifiant:string):Promise<ServiceResponse<null>>{
+    async forgetPwd(@Param("identifiant") identifiant: string): Promise<ServiceResponse<null>> {
         return await this.authService.forgetPassword(identifiant)
     }
 
 
     @Put("reset")
-    async resetPwd(@Body() form:any):Promise<ServiceResponse<any>>{
-        return await this.authService.resetPwd(form)
+    async resetPwd(@Body() form: any): Promise<ServiceResponse<any>> {
+        const getUser = await this.userService.getUserByIdentifiant(form.identifiant);
+        if (!getUser.data) {
+            throw new NotFoundException("Utilisateur introuvable !")
+        }
+
+        const res = await this.authService.resetPwd(form);
+        await this.userService.updateUser(getUser.data.id, { refreshTokens: [] });
+        return res
+    }
+
+
+    @Post("/refresh")
+    async refreshToken(@Req() req, @Res() res): Promise<any> {
+
+        const payload = req.cookies['refreshToken'];
+
+        if (!payload) {
+            throw new ForbiddenException("Token introuvable !");
+        }
+
+        const { accessToken, refreshToken } = await this.authService.refreshTokens(payload);
+
+        // Renvoi nouveaux cookies
+        res.cookie('accessToken', accessToken, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+            maxAge: 30 * 1000, // 15m
+            path: '/',
+        });
+
+        res.cookie('refreshToken', refreshToken, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+            maxAge: 2 * 60 * 1000, // 7d
+            path: '/',
+        });
+
+        return res.json({ message: 'Tokens rafraîchis avec succès' });
     }
 }

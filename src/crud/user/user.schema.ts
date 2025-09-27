@@ -9,44 +9,49 @@ export type UserDocument = HydratedDocument<User>;
 
 
 @Schema(schemaOptions)
-export class User{
+export class User {
 
-    @Prop({required:true})
-    fullname:string
+    @Prop({ required: true })
+    fullname: string
 
-    @Prop({required:true,unique:true})
-    username:string
+    @Prop({ required: true, unique: true })
+    username: string
 
-    @Prop({required:true,unique:true})
-    email:string
+    @Prop({ required: true, unique: true })
+    email: string
 
-    @Prop({type:[AccountProviderSchema],default:[]})
-    linkedAccounts:AccountProvider[]
+    @Prop({ type: [AccountProviderSchema], default: [] })
+    linkedAccounts: AccountProvider[]
 
-    @Prop({type:Types.ObjectId,ref:Role.name,required:true})
-    role:Types.ObjectId
+    @Prop({ type: Types.ObjectId, ref: Role.name, required: true })
+    role: Types.ObjectId
 
-    @Prop({required:false,length:8})
-    phone?:string
+    @Prop({ required: false, length: 8 })
+    phone?: string
 
-    @Prop({required:false,select:false})
-    password?:string
+    @Prop({ required: false, select: false })
+    password?: string
 
-    @Prop({required:false,select:false})
-    resetToken?:string
+    @Prop({ type: [{ jti:String,tokenHash: String, device: String, createdAt: Date, expiresAt: Date }] })
+    refreshTokens: { jti:string; tokenHash: string; device: string; createdAt: Date; expiresAt: Date }[];
 
-    @Prop({required:false,select:false})
-    resetTokenExpiration?:Date
+    @Prop({ required: false, select: false })
+    resetToken?: string
 
+    @Prop({ required: false, select: false })
+    resetTokenExpiration?: Date
+
+    @Prop({ required: true })
+    hasPassword: boolean
 }
 
-export const UserSchema=SchemaFactory.createForClass(User)
+export const UserSchema = SchemaFactory.createForClass(User)
 
-UserSchema.virtual("orders",{
-    localField:"_id",
-    foreignField:"client",
-    ref:"Order",
-    justOne:false
+UserSchema.virtual("orders", {
+    localField: "_id",
+    foreignField: "client",
+    ref: "Order",
+    justOne: false
 })
 
 UserSchema.set("toJSON", { virtuals: true });

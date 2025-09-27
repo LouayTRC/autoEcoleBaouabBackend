@@ -7,7 +7,7 @@ export class AuthenticateGuard implements CanActivate {
 
     canActivate(context: ExecutionContext): boolean {
         const request = context.switchToHttp().getRequest();
-        const token = request.cookies?.jwt;
+        const token = request.cookies?.accessToken;
 
         if (!token) {
             throw new UnauthorizedException('Token manquant ou invalide');

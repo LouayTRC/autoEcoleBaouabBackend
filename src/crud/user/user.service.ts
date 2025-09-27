@@ -62,7 +62,8 @@ export class UserService {
                     email: infos.email,
                     phone: infos.phone,
                     password,
-                    role: role.data._id
+                    role: role.data._id,
+                    hasPassword: true
                 })
 
                 console.log("Admin initialisé avec success !!");
@@ -99,7 +100,8 @@ export class UserService {
                 email,
                 phone,
                 role: getRole.data._id,
-                password: hashedPwd
+                password: hashedPwd,
+                hasPassword: true
             })
 
             return {
@@ -143,7 +145,8 @@ export class UserService {
             role: getRole.data,
             linkedAccounts: [{ provider, provider_id, verified: provider_status }],
             password: null,
-            phone: null
+            phone: null,
+            hasPassword: false
         });
 
         return {
@@ -154,7 +157,6 @@ export class UserService {
 
     async updateUser(user_id: string, userData: any, session?: ClientSession): Promise<ServiceResponse<User>> {
 
-
         const getUser = await this.getUserById(user_id, [], session);
         if (!getUser.data) {
             throw new NotFoundException("Cet utilisateur est introuvable !")
@@ -163,14 +165,13 @@ export class UserService {
         let payloadData: any = {}
 
         if (userData.username || userData.email) {
-            const verifCredentials = await this.verifUniqueCredentials(userData);
+            const verifCredentials = await this.verifUniqueCredentials(userData, user_id);
             if (verifCredentials.length > 0) {
                 throw new ConflictException(verifCredentials);
             }
 
             if (userData.email) {
                 payloadData.email = userData.email;
-
             }
 
             if (userData.username) {
@@ -178,12 +179,11 @@ export class UserService {
             }
         }
 
-
         if (userData.password) {
-            
             const hashSalt = process.env.HASH_SALT
             const password = await bcrypt.hash(userData.password, Number(hashSalt))
             payloadData.password = password;
+            payloadData.hasPassword = true
         }
 
         if (userData.fullname) {
@@ -197,8 +197,30 @@ export class UserService {
         payloadData.resetToken = userData.resetToken || null;
         payloadData.resetTokenExpiration = userData.resetTokenExpiration || null;
 
+        // ✅ FIX: Gérer refreshTokens (pluriel) - pour remplacer le tableau complet
+        if (userData.refreshTokens !== undefined) {
+            payloadData.refreshTokens = userData.refreshTokens;
+        }
+        // Gérer refreshToken (singulier) - pour ajouter un nouveau token
+        else if (userData.refreshToken) {
+            const tokenHash = await bcrypt.hash(userData.refreshToken, Number(process.env.HASH_SALT || 10));
 
+            payloadData.refreshTokens = [
+                ...(getUser.data.refreshTokens || []),
+                {
+                    jti: userData.jti,
+                    tokenHash,
+                    device: userData.device || 'Unknown',
+                    createdAt: new Date(),
+                    expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+                }
+            ];
 
+            // Limiter à 5 tokens max
+            if (payloadData.refreshTokens.length > 5) {
+                payloadData.refreshTokens = payloadData.refreshTokens.slice(-5);
+            }
+        }
 
         const updatedUser = await this.userModel.findOneAndUpdate(
             { _id: new Types.ObjectId(user_id) },
@@ -210,10 +232,36 @@ export class UserService {
             throw new NotFoundException("Utilisateur introuvable après mis à jours!")
         }
 
-
         return {
             data: updatedUser,
             message: "Utilisateur mis à jour avec succès!"
+        }
+    }
+
+    async changePwd(form: any): Promise<ServiceResponse<null>> {
+        const { id, oldPwd, newPwd } = form;
+
+        const getUser = await this.userModel.findById(new Types.ObjectId(id)).select("+password").exec();
+        if (!getUser) {
+            throw new NotFoundException("Utilisateur introuvable !");
+        }
+
+        if (getUser.hasPassword) {
+            const verifPwd = await bcrypt.compare(oldPwd, getUser.password!);
+            if (!verifPwd) {
+                throw new BadRequestException("Ancien mot de passe incorrect !")
+            }
+        }
+
+        try {
+            await this.updateUser(getUser.id, { password: newPwd });
+            return {
+                data: null,
+                message: "Mot de passe changé avec succès !"
+            }
+
+        } catch (error) {
+            throw new InternalServerErrorException("Problème lors de la changement du mot de passe !")
         }
 
     }
@@ -287,11 +335,11 @@ export class UserService {
 
 
 
-    async verifUniqueCredentials(form: any): Promise<{ field: string; message: string }[]> {
+    async verifUniqueCredentials(form: any, user_id?: string): Promise<{ field: string; message: string }[]> {
         const errors: { field: string; message: string }[] = [];
-
         try {
             const user = await this.userModel.findOne({
+                _id: { $ne: new Types.ObjectId(user_id) },
                 $or: [
                     { username: form.username },
                     { email: form.email }
@@ -314,6 +362,22 @@ export class UserService {
             errors.push({ field: 'server', message: 'Erreur serveur, réessayez plus tard' });
             return errors;
         }
+    }
+
+
+    async addRefreshToken(userId: string, tokenData: { jti:string, tokenHash: string; device: string; createdAt: Date; expiresAt: Date }) {
+        // Limite 5 devices maximum
+        await this.userModel.updateOne(
+            { _id: userId },
+            {
+                $push: {
+                    refreshTokens: {
+                        $each: [tokenData],
+                        $slice: -5,
+                    },
+                },
+            }
+        );
     }
 
 

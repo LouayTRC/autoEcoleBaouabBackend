@@ -36,5 +36,11 @@ export class UserController {
         return await this.userService.updateUser(form.id,form)
     }
 
+
+    @Put('pwd')
+    async changeUserPwd(@Body() form:any):Promise<ServiceResponse<null>>{
+        return await this.userService.changePwd(form)
+    }
+
     
 }
