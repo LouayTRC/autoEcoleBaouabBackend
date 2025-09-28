@@ -33,12 +33,6 @@ export class AuthController {
     async login(@Req() req, @Res({ passthrough: true }) res: Response) {
         const { accessToken, refreshToken, jti } = this.authService.generateTokens(req.user);
 
-        try {
-            const decoded = this.jwtService.decode(refreshToken);
-        } catch (e) {
-            console.log('🔍 LOGIN DEBUG - Cannot decode token:', e.message);
-        }
-
         const userAgent = req.headers['user-agent'] || '';
         const parser = new UAParser(userAgent);
         const device = parser.getDevice().model || parser.getBrowser().name || 'Unknown';
@@ -52,7 +46,7 @@ export class AuthController {
             tokenHash,
             device,
             createdAt: new Date(),
-            expiresAt: new Date(Date.now() + 2 * 60 * 1000), // 7 jours
+            expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 jours
         });
 
         // 4️⃣ Envoyer les cookies
@@ -60,7 +54,7 @@ export class AuthController {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
             sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
-            maxAge: 30 * 1000, // 1h
+            maxAge: 60 * 60 * 1000, // 1h
             path: '/',
         });
 
@@ -68,7 +62,7 @@ export class AuthController {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
             sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
-            maxAge: 2 * 60 * 1000, // 7j
+            maxAge: 7 * 24 * 60 * 60 * 1000, // 7j
             path: '/',
         });
 
@@ -135,7 +129,7 @@ export class AuthController {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
             sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
-            maxAge: 60 * 60 * 1000, // 15m
+            maxAge: 60 * 60 * 1000, // 1h
             path: '/',
         });
 
@@ -143,7 +137,7 @@ export class AuthController {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
             sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
-            maxAge: 7 * 24 * 60 * 60 * 1000, // 7d
+            maxAge: 7 * 24 * 60 * 60 * 1000, // 7j
             path: '/',
         });
 
@@ -195,7 +189,7 @@ export class AuthController {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
             sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
-            maxAge: 60 * 60 * 1000, // 15m
+            maxAge: 60 * 60 * 1000, // 1h
             path: '/',
         });
 
@@ -203,7 +197,7 @@ export class AuthController {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
             sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
-            maxAge: 7 * 24 * 60 * 60 * 1000, // 7d
+            maxAge: 7 * 24 * 60 * 60 * 1000, // 7j
             path: '/',
         });
 
@@ -255,7 +249,7 @@ export class AuthController {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
             sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
-            maxAge: 30 * 1000, // 15m
+            maxAge: 60 * 60 * 1000, // 1h
             path: '/',
         });
 
@@ -263,7 +257,7 @@ export class AuthController {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
             sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
-            maxAge: 2 * 60 * 1000, // 7d
+            maxAge: 7 * 24 * 60 * 60 * 1000, // 7j
             path: '/',
         });
 
