@@ -7,14 +7,28 @@ export type ServiceDocument = HydratedDocument<Services>;
 @Schema(schemaOptions)
 export class Services {
 
-    @Prop({ required: true, unique: true })
-    name: string
+    @Prop({
+        type: Object,
+        required: true,
+        validate: {
+            validator: (v: Record<string, string>) => !!v.fr && !!v.ar, // retourne boolean
+            message: 'Les traductions du nom en français et arabe sont obligatoires'
+        }
+    })
+    name: Record<string,string>
+
+    @Prop({
+        type: Object,
+        required: true,
+        validate: {
+            validator: (v: Record<string, string>) => !!v.fr && !!v.ar, // retourne boolean
+            message: 'Les traductions du description en français et arabe sont obligatoires'
+        }
+    })
+    description: Record<string,string>
 
     @Prop({ required: true })
     echelle: string
-
-    @Prop({ required: true })
-    description: string
 
     @Prop({ required: true })
     image: string
@@ -29,12 +43,12 @@ export class Services {
     deletedAt: Date
 }
 
-export const ServicesSchema=SchemaFactory.createForClass(Services)
+export const ServicesSchema = SchemaFactory.createForClass(Services)
 
 ServicesSchema.virtual('tarifs', {
-    ref: 'Tarif', 
+    ref: 'Tarif',
     localField: '_id',
-    foreignField: 'service', 
+    foreignField: 'service',
     justOne: false
 });
 

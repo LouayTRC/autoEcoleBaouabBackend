@@ -4,6 +4,7 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { envSchema } from './validation/env.schema';
 import { PermisController } from './crud/permis/permis.controller';
 import { PermisModule } from './crud/permis/permis.module';
+import { ServeStaticModule } from '@nestjs/serve-static';
 
 import { AuthModule } from './crud/auth/auth.module';
 import { RoleModule } from './crud/role/role.module';
@@ -15,11 +16,16 @@ import { FileUploadModule } from './crud/fileUpload/fileUpload.module';
 import { TarifModule } from './crud/tarif/tarif.module';
 import { PackModule } from './crud/pack/pack.module';
 import { EmailModule } from './crud/email/email.module';
+import { join } from 'path';
 
 
 
 @Module({
   imports: [
+    ServeStaticModule.forRoot({
+      rootPath: join(__dirname, '..', 'uploads'),
+      serveRoot: '/uploads',                    
+    }),
     ConfigModule.forRoot({
       isGlobal: true,
       validationSchema: envSchema
@@ -54,6 +60,8 @@ export class AppModule implements NestModule {
       .exclude({ path: 'auth/(.*)', method: RequestMethod.ALL })
       .exclude({ path: 'permis', method: RequestMethod.GET })
       .exclude({ path: 'pack/(.*)', method: RequestMethod.GET })
+      .exclude({ path: 'services', method: RequestMethod.GET })
+      .exclude({ path: 'email' , method:RequestMethod.POST})
       .forRoutes('*')
   }
 

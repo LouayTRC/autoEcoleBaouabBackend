@@ -46,11 +46,17 @@ export class UserService {
 
 
 
-                const role = await this.roleService.getRoleByName(adminRole)
+                let role = await this.roleService.getRoleByName(adminRole)
                 if (!role.data) {
                     console.log("Role admin introuvable");
-                    return
+                    
+                    await this.roleService.create({name:Roles.admin})
+                    await this.roleService.create({name:Roles.client});
+                    console.log("Roles créés avec succès !");
+                    
                 }
+
+                role = await this.roleService.getRoleByName(adminRole)
 
 
                 const password = await bcrypt.hash(infos.password, Number(hashSalt))
@@ -62,7 +68,7 @@ export class UserService {
                     email: infos.email,
                     phone: infos.phone,
                     password,
-                    role: role.data._id,
+                    role: role.data!._id,
                     hasPassword: true
                 })
 
@@ -287,9 +293,9 @@ export class UserService {
             ];
         }
 
-        const skip = (page - 1) * limit;
+        const skip = (page - 1) * 1;
 
-        const data = await this.userModel.find(filter).skip(skip).limit(limit).exec();
+        const data = await this.userModel.find(filter).skip(skip).limit(1).exec();
         const total = await this.userModel.countDocuments(filter).exec();
 
         return {
@@ -297,7 +303,7 @@ export class UserService {
                 users: data,
                 total,
                 page,
-                limit
+                limit:1
             }
         }
         // return this.userModel.find().exec();

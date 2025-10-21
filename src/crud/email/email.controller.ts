@@ -1,6 +1,8 @@
-import { Body, Controller, Get, Post, Put } from '@nestjs/common';
-import { ServiceResponse } from 'src/common/types';
+import { Body, Controller, Get, Post, Put, UseGuards } from '@nestjs/common';
+import { Roles, ServiceResponse } from 'src/common/types';
 import { EmailService } from './email.service';
+import { AuthenticateGuard } from 'src/guards/authenticate.guard';
+import { RolesDecorator } from 'src/common/decorators';
 
 @Controller('email')
 export class EmailController {
@@ -14,12 +16,16 @@ export class EmailController {
     }
 
     @Get()
+    @UseGuards(AuthenticateGuard)
+    @RolesDecorator(Roles.admin)
     async getAllContactUsEmails():Promise<ServiceResponse<any[]>>{
         return await this.emailService.getAllContactUsEmails();
     }
 
 
     @Put()
+    @UseGuards(AuthenticateGuard)
+    @RolesDecorator(Roles.admin)
     async updateContactUsEmail(@Body() form:any):Promise<ServiceResponse<any>>{
         const {id,status}=form
         return await this.emailService.updateContactUsEmail(id,status);

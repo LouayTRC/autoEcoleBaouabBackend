@@ -29,54 +29,54 @@ export class PackController {
         private fileUploadService:FileUploadService
     ) { }
 
-    @Post()
-    @UseInterceptors(ImageUpload("image"))
-    async addPack(
-        @UploadedFile() file: Express.Multer.File,
-        @Body('data') data: any
-    ): Promise<ServiceResponse<Pack>> {
+    // @Post()
+    // @UseInterceptors(ImageUpload("image"))
+    // async addPack(
+    //     @UploadedFile() file: Express.Multer.File,
+    //     @Body('data') data: any
+    // ): Promise<ServiceResponse<Pack>> {
 
-        const body = JSON.parse(data);
-        let result: ServiceResponse<Pack>
+    //     const body = JSON.parse(data);
+    //     let result: ServiceResponse<Pack>
 
-        const session = await this.packModel.db.startSession();
+    //     const session = await this.packModel.db.startSession();
 
-        await session.withTransaction(async () => {
-            const newPack = await this.packService.addPack(body, session);
-            result = {
-                message: newPack.message,
-                data: newPack.data
-            }
+    //     await session.withTransaction(async () => {
+    //         const newPack = await this.packService.addPack(body, session);
+    //         result = {
+    //             message: newPack.message,
+    //             data: newPack.data
+    //         }
 
-            let fileName = '';
-            if (file) {
-                fileName = await this.fileUploadService.saveFile(file, 'packs');
-                const updatedPermis = await this.packService.updatePack(newPack.data.id, { image: fileName }, session);
-                result = {
-                    ...result,
-                    data: { ...result.data, image: updatedPermis.data.image },
-                };
-            }
+    //         let fileName = '';
+    //         if (file) {
+    //             fileName = await this.fileUploadService.saveFile(file, 'packs');
+    //             const updatedPermis = await this.packService.updatePack(newPack.data.id, { image: fileName }, session);
+    //             result = {
+    //                 ...result,
+    //                 data: { ...result.data, image: updatedPermis.data.image },
+    //             };
+    //         }
 
-        })
-        return result!;
-    }
-
-
-    @Get(':status')
-    async getAllPacks(@Param("status") status?:number): Promise<ServiceResponse<Pack[]>> {
-        const statusFilter= status ? Number(status) : undefined
-        return await this.packService.getAllPacks(statusFilter)
-    }
+    //     })
+    //     return result!;
+    // }
 
 
-    @Put("status")
-    async updatePackStatus(@Body() form:any): Promise<ServiceResponse<Pack>> {
-        const payload={
-            status:form.status
-        }
-        return await this.packService.updatePack(form.pack_id,payload)
-    }
+    // @Get(':status')
+    // async getAllPacks(@Param("status") status?:number): Promise<ServiceResponse<Pack[]>> {
+    //     const statusFilter= status ? Number(status) : undefined
+    //     return await this.packService.getAllPacks(statusFilter)
+    // }
+
+
+    // @Put("status")
+    // async updatePackStatus(@Body() form:any): Promise<ServiceResponse<Pack>> {
+    //     const payload={
+    //         status:form.status
+    //     }
+    //     return await this.packService.updatePack(form.pack_id,payload)
+    // }
 
 
 

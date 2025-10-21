@@ -5,12 +5,12 @@ import { ServicesService } from './services.service';
 import { ImageUpload } from 'src/common/decorators';
 import { FileUploadService } from '../fileUpload/fileUpload.service';
 import { TarifService } from '../tarif/tarif.service';
-import { Connection, Model } from 'mongoose';
-import { InjectConnection, InjectModel } from '@nestjs/mongoose';
-import { log } from 'node:console';
+import { Model } from 'mongoose';
+import { InjectModel } from '@nestjs/mongoose';
 import { objectIdSchema } from 'src/validation/objectId.validators';
 import { JoiValidationPipe } from 'src/pipes/joi.validation.pipe';
 import { Tarif } from '../tarif/tarif.schema';
+import { AuthenticateGuard } from 'src/guards/authenticate.guard';
 
 @Controller('services')
 export class ServicesController {

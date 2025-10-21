@@ -293,7 +293,7 @@ export class TarifService {
 
     // Retourner les tarifs mis à jour, triés par service.name
     return {
-        data: updatedTarifs.sort((a, b) => a.service.name.localeCompare(b.service.name))
+        data: updatedTarifs.sort((a, b) => a.service.name.fr.localeCompare(b.service.name.fr))
     };
 }
 

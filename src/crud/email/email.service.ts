@@ -3,7 +3,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import * as nodemailer from "nodemailer";
 import { ServiceResponse } from 'src/common/types';
 import { Email } from './email.schema';
-import { Model } from 'mongoose';
+import { Model, Types } from 'mongoose';
 @Injectable()
 export class EmailService {
 
@@ -99,14 +99,18 @@ export class EmailService {
   }
 
 
-  async updateContactUsEmail(email_id:string,status:number):Promise<ServiceResponse<any[]>>{
-    const email=await this.emailModel.find({id:email_id});
+  async updateContactUsEmail(email_id:string,status:number):Promise<ServiceResponse<any>>{
+
+    
+    const email=await this.emailModel.findOne({_id:new Types.ObjectId(email_id)});
 
     if (!email) {
       throw new NotFoundException("Ce contact us Email est introuvable !!")
     }
 
-    await this.emailModel.findOneAndUpdate({id:email_id,status});
+    
+
+    await this.emailModel.findOneAndUpdate({_id:new Types.ObjectId(email_id),status});
 
     return {
       data:email,

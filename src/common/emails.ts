@@ -194,7 +194,7 @@ export const createOwnerNewCommandeMail = (
 
 
 export const createForgetPwdEmail = (email: string, token: string): EmailObject => {
-  const url = `${process.env.FRONTEND_API}/client/reset-password/${token}`;
+  const url = `${process.env.FRONTEND_API}/reset-password/${token}`;
 
   const subject = "Réinitialisation de votre mot de passe";
 

@@ -37,7 +37,15 @@ export class PermisController {
 
   @Get(':id')
   async getPermisById(@Param('id', new JoiValidationPipe(objectIdSchema)) id: string): Promise<ServiceResponse<Permis | null>> {
-    const permis = await this.permisService.getPermisById(id);
+    const relations = [
+      {
+        path: "tarifs",
+        childs: [{
+          path: "service"
+        }]
+      }
+    ]
+    const permis = await this.permisService.getPermisById(id,relations);
     if (!permis.data) {
       throw new NotFoundException("Ce permis est introuvable !")
     }

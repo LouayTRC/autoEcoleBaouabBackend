@@ -15,10 +15,10 @@ export class Pack {
   name: string;
 
   @Prop({ required: true })
-  image: string;
+  description: string;
 
   @Prop({ required: true })
-  description: string;
+  image: string;
 
   @Prop({ type: PermisSnapshotSchema, required: true })
   permis: PermisSnapshot;

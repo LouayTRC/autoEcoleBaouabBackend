@@ -1,4 +1,4 @@
-import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
+import { forwardRef, MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { RoleModule } from 'src/crud/role/role.module';
 import { UserModule } from 'src/crud/user/user.module';
@@ -14,20 +14,20 @@ import { EmailModule } from '../email/email.module';
 
 @Module({
     imports: [
-        EmailModule,
+        forwardRef(() => EmailModule),
         UserModule,
         RoleModule,
         PassportModule.register({ session: false }),
         JwtModule.registerAsync({
-            imports:[ConfigModule],
-            inject:[ConfigService],
-            useFactory: (configService:ConfigService)=>({
+            imports: [ConfigModule],
+            inject: [ConfigService],
+            useFactory: (configService: ConfigService) => ({
                 secret: configService.get<string>("ACCESS_JWT_SECRET"),
-                signOptions: {expiresIn:configService.get<string>("ACCESS_JWT_EXPIRES_IN")}
+                signOptions: { expiresIn: configService.get<string>("ACCESS_JWT_EXPIRES_IN") }
             })
         })
     ],
-    providers: [AuthService, LocalStrategy,GoogleStrategy,FacebookStrategy],
+    providers: [AuthService, LocalStrategy, GoogleStrategy, FacebookStrategy],
     exports: [AuthService, JwtModule],
     controllers: [AuthController]
 })
