@@ -53,10 +53,6 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      # 4️⃣ Build NestJS
-      - name: Build NestJS
-        run: npm run build
-
 
       # 6️⃣ Generate .env.prod file dynamically
       - name: Generate .env.prod
@@ -84,6 +80,10 @@ jobs:
           echo "GOOGLE_CLIENT_SECRET=$GOOGLE_CLIENT_SECRET" >> .env.prod
           echo "FACEBOOK_CLIENT_ID=$FACEBOOK_CLIENT_ID" >> .env.prod
           echo "FACEBOOK_CLIENT_SECRET=$FACEBOOK_CLIENT_SECRET" >> .env.prod
+
+      # 4️⃣ Build NestJS
+      - name: Build NestJS
+        run: npm run build
 
       # 7️⃣ Deploy to Render
       - name: Deploy to Render
