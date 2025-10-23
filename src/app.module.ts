@@ -24,9 +24,11 @@ import { join } from 'path';
   imports: [
     ServeStaticModule.forRoot({
       rootPath: join(__dirname, '..', 'uploads'),
-      serveRoot: '/uploads',                    
+      serveRoot: '/uploads',
     }),
     ConfigModule.forRoot({
+      envFilePath: `.env.${process.env.NODE_ENV || 'dev'}`,
+      ignoreEnvFile: process.env.NODE_ENV === 'prod', 
       isGlobal: true,
       validationSchema: envSchema
     }),
@@ -61,7 +63,7 @@ export class AppModule implements NestModule {
       .exclude({ path: 'permis', method: RequestMethod.GET })
       .exclude({ path: 'pack/(.*)', method: RequestMethod.GET })
       .exclude({ path: 'services', method: RequestMethod.GET })
-      .exclude({ path: 'email' , method:RequestMethod.POST})
+      .exclude({ path: 'email', method: RequestMethod.POST })
       .forRoutes('*')
   }
 

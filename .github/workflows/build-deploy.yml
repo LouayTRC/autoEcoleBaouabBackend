@@ -1,0 +1,94 @@
+name: Build and Deploy NestJS Application
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    environment: prod  # utilise l'environnement prod
+
+    env:
+      NODE_ENV: prod
+      MONGO_URI: ${{ secrets.MONGO_URI }}
+      PORT: ${{ secrets.PORT }}
+      ADMIN_ROLE: ${{ secrets.ADMIN_ROLE }}
+      CLIENT_ROLE: ${{ secrets.CLIENT_ROLE }}
+      HASH_SALT: ${{ secrets.HASH_SALT }}
+      ACCESS_JWT_SECRET: ${{ secrets.ACCESS_JWT_SECRET }}
+      ACCESS_JWT_EXPIRES_IN: ${{ secrets.ACCESS_JWT_EXPIRES_IN }}
+      REFRESH_JWT_SECRET: ${{ secrets.REFRESH_JWT_SECRET }}
+      REFRESH_JWT_EXPIRES_IN: ${{ secrets.REFRESH_JWT_EXPIRES_IN }}
+      ADMIN_FULLNAME: ${{ secrets.ADMIN_FULLNAME }}
+      ADMIN_USERNAME: ${{ secrets.ADMIN_USERNAME }}
+      ADMIN_EMAIL: ${{ secrets.ADMIN_EMAIL }}
+      ADMIN_PHONE: ${{ secrets.ADMIN_PHONE }}
+      ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD }}
+      MAIL_HOST: ${{ secrets.MAIL_HOST }}
+      MAIL_PORT: ${{ secrets.MAIL_PORT }}
+      MAIL_USER: ${{ secrets.MAIL_USER }}
+      MAIL_PASS: ${{ secrets.MAIL_PASS }}
+      GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+      GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+      FACEBOOK_CLIENT_ID: ${{ secrets.FACEBOOK_CLIENT_ID }}
+      FACEBOOK_CLIENT_SECRET: ${{ secrets.FACEBOOK_CLIENT_SECRET }}
+      RENDER_SERVICE_ID: ${{ secrets.RENDER_SERVICE_ID }}
+      RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
+
+    steps:
+      # 1️⃣ Checkout repository
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # 2️⃣ Setup Node.js 20
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      # 3️⃣ Install dependencies
+      - name: Install dependencies
+        run: npm ci
+
+      # 4️⃣ Build NestJS
+      - name: Build NestJS
+        run: npm run build
+
+
+      # 6️⃣ Generate .env.prod file dynamically
+      - name: Generate .env.prod
+        run: |
+          echo "NODE_ENV=prod" > .env.prod
+          echo "MONGO_URI=$MONGO_URI" >> .env.prod
+          echo "PORT=$PORT" >> .env.prod
+          echo "ADMIN_ROLE=$ADMIN_ROLE" >> .env.prod
+          echo "CLIENT_ROLE=$CLIENT_ROLE" >> .env.prod
+          echo "HASH_SALT=$HASH_SALT" >> .env.prod
+          echo "ACCESS_JWT_SECRET=$ACCESS_JWT_SECRET" >> .env.prod
+          echo "ACCESS_JWT_EXPIRES_IN=$ACCESS_JWT_EXPIRES_IN" >> .env.prod
+          echo "REFRESH_JWT_SECRET=$REFRESH_JWT_SECRET" >> .env.prod
+          echo "REFRESH_JWT_EXPIRES_IN=$REFRESH_JWT_EXPIRES_IN" >> .env.prod
+          echo "ADMIN_FULLNAME=$ADMIN_FULLNAME" >> .env.prod
+          echo "ADMIN_USERNAME=$ADMIN_USERNAME" >> .env.prod
+          echo "ADMIN_EMAIL=$ADMIN_EMAIL" >> .env.prod
+          echo "ADMIN_PHONE=$ADMIN_PHONE" >> .env.prod
+          echo "ADMIN_PASSWORD=$ADMIN_PASSWORD" >> .env.prod
+          echo "MAIL_HOST=$MAIL_HOST" >> .env.prod
+          echo "MAIL_PORT=$MAIL_PORT" >> .env.prod
+          echo "MAIL_USER=$MAIL_USER" >> .env.prod
+          echo "MAIL_PASS=$MAIL_PASS" >> .env.prod
+          echo "GOOGLE_CLIENT_ID=$GOOGLE_CLIENT_ID" >> .env.prod
+          echo "GOOGLE_CLIENT_SECRET=$GOOGLE_CLIENT_SECRET" >> .env.prod
+          echo "FACEBOOK_CLIENT_ID=$FACEBOOK_CLIENT_ID" >> .env.prod
+          echo "FACEBOOK_CLIENT_SECRET=$FACEBOOK_CLIENT_SECRET" >> .env.prod
+
+      # 7️⃣ Deploy to Render
+      - name: Deploy to Render
+        run: |
+          curl -v -X POST "https://api.render.com/v1/services/${{ secrets.RENDER_SERVICE_ID }}/deploys" \
+          -H "Accept: application/json" \
+          -H "Authorization: Bearer ${{ secrets.RENDER_API_KEY }}" \
+          -d ''
